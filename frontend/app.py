@@ -119,20 +119,23 @@ with st.form("formulario_configuracao"):
     st.subheader(":globe_with_meridians: VLANs")
     coluna_10, coluna_20, coluna_50 = st.columns(3)
     with coluna_10:
-        selo_secao("#3483FA", "#FFFFFF", "VLAN 10 · DADOS")
-        nome_vlan_10 = st.text_input(
-            "VLAN 10", value="VLAN_DADOS", label_visibility="collapsed"
+        selo_secao("#3483FA", "#FFFFFF", "DADOS")
+        id_vlan_10 = st.number_input(
+            "ID", min_value=1, max_value=4094, value=10, step=1, key="id_vlan_1"
         )
+        nome_vlan_10 = st.text_input("Nome", value="VLAN_DADOS", key="nome_vlan_1")
     with coluna_20:
-        selo_secao("#00A650", "#FFFFFF", "VLAN 20 · VOZ")
-        nome_vlan_20 = st.text_input(
-            "VLAN 20", value="VLAN_VOZ", label_visibility="collapsed"
+        selo_secao("#00A650", "#FFFFFF", "VOZ")
+        id_vlan_20 = st.number_input(
+            "ID", min_value=1, max_value=4094, value=20, step=1, key="id_vlan_2"
         )
+        nome_vlan_20 = st.text_input("Nome", value="VLAN_VOZ", key="nome_vlan_2")
     with coluna_50:
-        selo_secao("#E63C3C", "#FFFFFF", "VLAN 50 · SEGURANÇA")
-        nome_vlan_50 = st.text_input(
-            "VLAN 50", value="VLAN_SEGURANCA", label_visibility="collapsed"
+        selo_secao("#E63C3C", "#FFFFFF", "SEGURANÇA")
+        id_vlan_50 = st.number_input(
+            "ID", min_value=1, max_value=4094, value=50, step=1, key="id_vlan_3"
         )
+        nome_vlan_50 = st.text_input("Nome", value="VLAN_SEGURANCA", key="nome_vlan_3")
 
     st.write("")
     enviado = st.form_submit_button(
@@ -176,7 +179,12 @@ def aplicar_configuracao_no_switch(host, usuario, senha, novo_hostname, vlans, a
 
 
 if enviado:
-    vlans_formulario = {10: nome_vlan_10, 20: nome_vlan_20, 50: nome_vlan_50}
+    ids_vlans = [int(id_vlan_10), int(id_vlan_20), int(id_vlan_50)]
+    if len(set(ids_vlans)) != len(ids_vlans):
+        st.error("As três VLANs precisam ter IDs diferentes entre si.")
+        st.stop()
+
+    vlans_formulario = dict(zip(ids_vlans, [nome_vlan_10, nome_vlan_20, nome_vlan_50]))
 
     with st.status("Aplicando configuração no switch...", expanded=True) as status:
         try:

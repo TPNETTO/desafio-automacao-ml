@@ -59,15 +59,14 @@ def alterar_hostname(conexao, novo_hostname):
     Atualiza o prompt base apos a mudanca, pois o Netmiko usa o hostname
     original para reconhecer o prompt e comandos seguintes travariam sem isso.
 
-    Sem o parametro `pattern`, o Netmiko aceita o prompt assim que encontrar
-    QUALQUER '#'/'>' no buffer, o que pode capturar um fragmento do prompt
-    ainda incompleto (ex.: 'SWITCH_AUTOMATIZ' em vez de
-    'SWITCH_AUTOMATIZADO') caso a leitura ocorra no meio da transmissao.
-    Passar o hostname esperado seguido do terminador ('#' ou '>') como
-    pattern forca a espera pelo prompt completo antes de aceita-lo.
+    Em vez de pedir ao Netmiko para reler o prompt do switch (set_base_prompt/
+    find_prompt), o que se mostrou instavel por depender do timing exato da
+    transmissao SSH (prompt capturado incompleto, ou nao encontrado dentro do
+    tempo esperado), atribui-se `base_prompt` diretamente: ja sabemos qual e o
+    novo hostname, pois acabamos de configura-lo.
     """
     resultado = conexao.send_config_set([f"hostname {novo_hostname}"])
-    conexao.set_base_prompt(pattern=rf"{re.escape(novo_hostname)}[#>]")
+    conexao.base_prompt = novo_hostname
     return resultado
 
 
