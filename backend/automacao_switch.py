@@ -49,6 +49,17 @@ def configurar_vlans(conexao, vlans=None):
     return conexao.send_config_set(comandos)
 
 
+def alterar_hostname(conexao, novo_hostname):
+    """Altera o hostname do switch na mesma sessao Netmiko ja aberta.
+
+    Atualiza o prompt base apos a mudanca, pois o Netmiko usa o hostname
+    original para reconhecer o prompt e comandos seguintes travariam sem isso.
+    """
+    resultado = conexao.send_config_set([f"hostname {novo_hostname}"])
+    conexao.set_base_prompt()
+    return resultado
+
+
 def testar_conexao(host, usuario, senha):
     """Testa a conexao com o switch via 'show version', sem alterar nada.
 
