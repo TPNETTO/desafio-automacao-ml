@@ -140,28 +140,31 @@ with st.form("formulario_configuracao"):
     )
 
 
-def aplicar_configuracao_no_switch(host, usuario, senha, novo_hostname, vlans):
+def aplicar_configuracao_no_switch(host, usuario, senha, novo_hostname, vlans, avisar_etapa):
     """Executa o fluxo completo de automacao contra o switch fisico.
 
     Conecta via SSH, aplica VLANs e hostname, salva na NVRAM, gera o backup
-    local e por fim rele a config para validar. Retorna um dicionario com o
-    resultado de cada etapa para exibicao no frontend.
+    local e por fim rele a config para validar. Chama `avisar_etapa(texto)`
+    apos cada etapa concluida, para o frontend mostrar progresso em tempo
+    real (util para saber o que ja foi aplicado no switch caso uma etapa
+    posterior falhe). Retorna um dicionario com o backup gerado e a
+    validacao final.
     """
-    resultado = {"etapas": [], "backup": None, "validacao": None}
+    resultado = {"backup": None, "validacao": None}
 
     conexao = backend_switch.conectar_switch(host, usuario, senha)
     try:
         backend_switch.configurar_vlans(conexao, vlans)
-        resultado["etapas"].append("VLANs 10/20/50 aplicadas")
+        avisar_etapa("VLANs 10/20/50 aplicadas")
 
         backend_switch.alterar_hostname(conexao, novo_hostname)
-        resultado["etapas"].append(f"Hostname alterado para '{novo_hostname}'")
+        avisar_etapa(f"Hostname alterado para '{novo_hostname}'")
 
         backend_switch.salvar_configuracao(conexao)
-        resultado["etapas"].append("Configuração salva na NVRAM")
+        avisar_etapa("Configuração salva na NVRAM")
 
         resultado["backup"] = backend_switch.fazer_backup(conexao)
-        resultado["etapas"].append(f"Backup gerado em '{resultado['backup']}'")
+        avisar_etapa(f"Backup gerado em '{resultado['backup']}'")
 
         resultado["validacao"] = backend_switch.validar_configuracao(
             conexao, novo_hostname, vlans_esperadas=vlans
@@ -179,11 +182,13 @@ if enviado:
         try:
             st.write("Conectando via SSH...")
             resultado = aplicar_configuracao_no_switch(
-                host, usuario, senha, novo_hostname, vlans_formulario
+                host,
+                usuario,
+                senha,
+                novo_hostname,
+                vlans_formulario,
+                avisar_etapa=lambda texto: st.write(f":white_check_mark: {texto}"),
             )
-
-            for etapa in resultado["etapas"]:
-                st.write(f":white_check_mark: {etapa}")
 
             validacao = resultado["validacao"]
             if validacao["ok"]:

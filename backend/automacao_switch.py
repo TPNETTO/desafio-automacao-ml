@@ -63,11 +63,11 @@ def alterar_hostname(conexao, novo_hostname):
     QUALQUER '#'/'>' no buffer, o que pode capturar um fragmento do prompt
     ainda incompleto (ex.: 'SWITCH_AUTOMATIZ' em vez de
     'SWITCH_AUTOMATIZADO') caso a leitura ocorra no meio da transmissao.
-    Passar o hostname esperado como pattern forca a espera pelo texto
-    completo antes de aceitar o prompt.
+    Passar o hostname esperado seguido do terminador ('#' ou '>') como
+    pattern forca a espera pelo prompt completo antes de aceita-lo.
     """
     resultado = conexao.send_config_set([f"hostname {novo_hostname}"])
-    conexao.set_base_prompt(pattern=re.escape(novo_hostname))
+    conexao.set_base_prompt(pattern=rf"{re.escape(novo_hostname)}[#>]")
     return resultado
 
 
