@@ -1,6 +1,7 @@
 """Modulo de conexao SSH com o switch Cisco via Netmiko."""
 
 import os
+import re
 from datetime import datetime
 
 from dotenv import load_dotenv
@@ -88,6 +89,34 @@ def fazer_backup(conexao, pasta_backup=PASTA_BACKUP):
         arquivo.write(config_atual)
 
     return caminho_arquivo
+
+
+def validar_configuracao(conexao, hostname_esperado, vlans_esperadas=None):
+    """Rele a configuracao do switch e compara com o esperado (hostname + VLANs).
+
+    Retorna um dicionario {"ok": bool, "divergencias": list[str]} para o
+    frontend/script exibir um alerta claro em caso de qualquer divergencia.
+    """
+    vlans_esperadas = vlans_esperadas or VLANS_PADRAO
+    divergencias = []
+
+    hostname_atual = conexao.base_prompt
+    if hostname_atual != hostname_esperado:
+        divergencias.append(
+            f"Hostname divergente: esperado '{hostname_esperado}', "
+            f"encontrado '{hostname_atual}'"
+        )
+
+    saida_vlans = conexao.send_command("show vlan brief")
+    for vlan_id, nome_esperado in vlans_esperadas.items():
+        padrao = rf"^{vlan_id}\s+{re.escape(nome_esperado)}\b"
+        if not re.search(padrao, saida_vlans, re.MULTILINE):
+            divergencias.append(
+                f"VLAN {vlan_id} ('{nome_esperado}') nao encontrada ou "
+                f"com nome divergente na saida de 'show vlan brief'"
+            )
+
+    return {"ok": not divergencias, "divergencias": divergencias}
 
 
 def testar_conexao(host, usuario, senha):
