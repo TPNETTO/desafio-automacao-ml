@@ -15,13 +15,17 @@ O projeto é dividido em duas partes:
 ├── backend/
 │   ├── automacao_switch.py   # Conexão SSH e automação via Netmiko
 │   └── backup/                # Backups de configuração gerados em tempo de execução
+│                               # (fora do Git — contêm hash de senha do switch)
 ├── frontend/
-│   └── app.py                 # Interface Streamlit
+│   ├── app.py                 # Interface Streamlit
+│   └── assets/                 # Logo usado no banner do frontend
+├── .streamlit/
+│   └── config.toml             # Tema visual do Streamlit
 ├── docs/
 │   └── plano_vpn_ipsec_fortigate_paloalto.md   # Documento da Parte 2
 ├── evidencias/
 │   ├── frontend/               # Screenshots do frontend
-│   └── switch_cli/             # Screenshots da CLI do switch
+│   └── switch_cli/             # Backup de exemplo (redigido) e evidências da CLI
 ├── requirements.txt
 ├── .env                        # Credenciais reais (NUNCA vai para o Git)
 └── .gitignore
@@ -74,9 +78,19 @@ O Streamlit abre uma página no navegador onde é possível:
 - Informar/editar o IP e as credenciais de conexão com o switch (pré-preenchidos a
   partir do `.env`, mas editáveis na tela)
 - Definir o novo hostname do switch
-- Configurar as VLANs 10 (`VLAN_DADOS`), 20 (`VLAN_VOZ`) e 50 (`VLAN_SEGURANÇA`)
-- Aplicar a configuração, gerar backup local e visualizar o resultado da validação
-  pós-configuração (alertas em caso de divergência)
+- Configurar até 3 VLANs, com ID e nome editáveis (vem pré-preenchido com
+  10/`VLAN_DADOS`, 20/`VLAN_VOZ` e 50/`VLAN_SEGURANÇA`, mas os IDs podem ser
+  alterados livremente — o formulário valida que os três IDs são diferentes
+  entre si antes de aplicar)
+- Clicar em **"Aplicar configuração"** para, de fato, conectar via SSH no switch e
+  executar todo o fluxo: aplicar VLANs, alterar hostname, salvar na NVRAM, gerar
+  backup local (com botão para baixar) e validar o resultado — cada etapa concluída
+  aparece na tela em tempo real, e qualquer divergência na validação é destacada
+  como alerta
+
+Exemplo do formulário rodando localmente (`http://localhost:8501`):
+
+![Formulário do frontend Streamlit](evidencias/frontend/Formulario.png)
 
 ## Notas de implementação
 
@@ -88,7 +102,17 @@ O Streamlit abre uma página no navegador onde é possível:
   esperado (VLANs e hostname), sinalizando qualquer divergência.
 - Credenciais nunca ficam hardcoded no código — são lidas do `.env` via
   `python-dotenv`.
+- Os backups reais (`backend/backup/*.txt`) ficam fora do Git de propósito: o
+  `show running-config` do switch inclui o hash da senha do usuário admin
+  (`secret 9 ...`), que não deve ir para um repositório público. Um exemplo real
+  já aplicado, com esse hash removido, está em
+  `evidencias/switch_cli/SWITCH_AUTOMATIZADO_backup_exemplo.txt` como evidência do
+  entregável.
 
 ## Status
 
-Consulte a Parte 2 (planejamento de VPN IPSec) em `docs/plano_vpn_ipsec_fortigate_paloalto.md`.
+- Parte 1 (automação do switch): frontend integrado ao backend e testado contra o
+  switch físico (Catalyst 2960-X, `10.10.90.6`) — VLANs, hostname, salvamento em
+  NVRAM, backup e validação funcionando de ponta a ponta.
+- Parte 2 (planejamento de VPN IPSec): documento ainda **pendente** — será
+  adicionado em `docs/plano_vpn_ipsec_fortigate_paloalto.md`.
