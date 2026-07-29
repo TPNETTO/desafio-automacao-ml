@@ -1,0 +1,30 @@
+# Credenciais e configuracao local
+.env
+
+# Arquivos internos / nao destinados ao repositorio publico
+CLAUDE.md
+Challenge-Networking_Portugues.pdf
+Imagens/
+
+# Ambiente virtual Python
+venv/
+.venv/
+env/
+
+# Cache Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Backups de configuracao gerados em tempo de execucao
+backend/backup/*.txt
+!backend/backup/.gitkeep
+
+# Streamlit
+.streamlit/
+
+# Editor / SO
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
