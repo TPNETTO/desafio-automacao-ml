@@ -20,8 +20,8 @@ __pycache__/
 backend/backup/*.txt
 !backend/backup/.gitkeep
 
-# Streamlit
-.streamlit/
+# Streamlit (segredos locais; config.toml de tema fica versionado)
+.streamlit/secrets.toml
 
 # Editor / SO
 .vscode/
