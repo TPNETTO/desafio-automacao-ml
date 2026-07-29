@@ -28,6 +28,27 @@ def conectar_switch(host, usuario, senha, device_type="cisco_ios"):
     return ConnectHandler(**dispositivo)
 
 
+VLANS_PADRAO = {
+    10: "VLAN_DADOS",
+    20: "VLAN_VOZ",
+    50: "VLAN_SEGURANCA",
+}
+
+
+def configurar_vlans(conexao, vlans=None):
+    """Cria/configura VLANs no switch a partir de um dicionario {id_vlan: nome}.
+
+    Usa uma conexao Netmiko ja aberta (ver conectar_switch), permitindo
+    encadear outras alteracoes (ex.: hostname) na mesma sessao.
+    """
+    vlans = vlans or VLANS_PADRAO
+    comandos = []
+    for vlan_id, nome in vlans.items():
+        comandos.append(f"vlan {vlan_id}")
+        comandos.append(f"name {nome}")
+    return conexao.send_config_set(comandos)
+
+
 def testar_conexao(host, usuario, senha):
     """Testa a conexao com o switch via 'show version', sem alterar nada.
 
