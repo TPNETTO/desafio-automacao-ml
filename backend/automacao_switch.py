@@ -60,6 +60,15 @@ def alterar_hostname(conexao, novo_hostname):
     return resultado
 
 
+def salvar_configuracao(conexao):
+    """Salva a configuracao atual na NVRAM (copy running-config startup-config).
+
+    Usa o metodo nativo do Netmiko para cisco_ios, que ja trata a confirmacao
+    de nome de arquivo pedida pelo switch nesse comando.
+    """
+    return conexao.save_config()
+
+
 def testar_conexao(host, usuario, senha):
     """Testa a conexao com o switch via 'show version', sem alterar nada.
 
