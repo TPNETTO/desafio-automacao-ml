@@ -67,11 +67,32 @@ O projeto é dividido em duas partes:
 
 ## Como usar o frontend
 
-Com o ambiente virtual ativo, execute:
+Com o ambiente virtual ativo (veja "Instalação" acima), no `cmd`/PowerShell do Windows,
+a partir da raiz do projeto, execute:
 
-```bash
-streamlit run frontend/app.py
+```bat
+venv\Scripts\python -m streamlit run frontend\app.py
 ```
+
+Isso sobe um servidor local. O terminal mostra algo como:
+
+```
+Local URL: http://localhost:8501
+Network URL: http://<ip-da-maquina>:8501
+```
+
+O Streamlit costuma abrir o navegador padrão automaticamente. Se isso não acontecer,
+abra manualmente `http://localhost:8501` em qualquer navegador (Chrome, Edge, Firefox)
+**na mesma máquina** que roda o comando acima — precisa ser essa máquina porque é ela
+quem tem acesso de rede ao switch (`10.10.90.6`), não o navegador em si. Para acessar de
+outro computador na mesma rede, use a `Network URL` mostrada no terminal.
+
+Para parar o servidor, volte ao terminal e aperte `Ctrl+C`.
+
+> **Atenção:** o Streamlit reexecuta `frontend/app.py` a cada interação, mas **não**
+> recarrega automaticamente módulos importados (como `backend/automacao_switch.py`).
+> Se você alterar esse arquivo, um `F5` no navegador não é suficiente — pare o servidor
+> (`Ctrl+C`) e rode o comando `streamlit run` de novo para a mudança valer.
 
 O Streamlit abre uma página no navegador onde é possível:
 
@@ -108,6 +129,56 @@ Exemplo do formulário rodando localmente (`http://localhost:8501`):
   já aplicado, com esse hash removido, está em
   `evidencias/switch_cli/SWITCH_AUTOMATIZADO_backup_exemplo.txt` como evidência do
   entregável.
+
+## Comandos aplicados no switch
+
+Ao clicar em "Aplicar configuração", o backend ([`backend/automacao_switch.py`](backend/automacao_switch.py))
+envia estes comandos via SSH (Netmiko, `device_type=cisco_ios`), na ordem abaixo,
+usando os valores preenchidos no formulário:
+
+| Etapa | Comandos enviados ao switch |
+|---|---|
+| Configurar cada VLAN | `vlan <id>` seguido de `name <nome>` (repetido para cada VLAN) |
+| Alterar hostname | `hostname <novo_hostname>` |
+| Salvar na NVRAM | `write mem` (equivalente a `copy running-config startup-config`) |
+| Gerar backup | `show running-config` (saída salva em `backend/backup/<hostname>_<data_hora>.txt`) |
+| Validar após aplicar | `show vlan brief` (conferido contra os IDs/nomes esperados) |
+| Teste de conexão (`python backend\automacao_switch.py`) | `show version` (não altera nada no switch) |
+
+## Comandos úteis via terminal (cmd/PowerShell)
+
+Todos a partir da raiz do projeto, com o ambiente virtual já criado:
+
+```bat
+:: Ativar o ambiente virtual
+venv\Scripts\activate
+
+:: Instalar/atualizar dependências
+pip install -r requirements.txt
+
+:: Testar só a conexão SSH com o switch, sem alterar nada (usa as
+:: credenciais do .env e executa "show version")
+python backend\automacao_switch.py
+
+:: Subir o frontend Streamlit
+streamlit run frontend\app.py
+
+:: Sair do ambiente virtual
+deactivate
+```
+
+## Solução de problemas
+
+- **"Router prompt not found" ou hostname aparece truncado após aplicar**: normalmente
+  sinal de que o servidor Streamlit ainda está com uma versão antiga do backend
+  carregada em memória (ver aviso na seção "Como usar o frontend" acima) — pare com
+  `Ctrl+C` e rode `streamlit run` de novo.
+- **"As três VLANs precisam ter IDs diferentes entre si"**: o formulário bloqueia o
+  envio se dois campos de ID de VLAN tiverem o mesmo número; ajuste os IDs e tente
+  novamente.
+- **Erro de autenticação/timeout ao aplicar**: confira host, usuário e senha no
+  formulário (ou no `.env`), e se a máquina que roda o Streamlit tem acesso de rede ao
+  switch na porta 22 (SSH).
 
 ## Status
 
