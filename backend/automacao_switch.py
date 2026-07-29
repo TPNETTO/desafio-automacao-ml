@@ -1,11 +1,14 @@
 """Modulo de conexao SSH com o switch Cisco via Netmiko."""
 
 import os
+from datetime import datetime
 
 from dotenv import load_dotenv
 from netmiko import ConnectHandler
 
 load_dotenv()
+
+PASTA_BACKUP = os.path.join(os.path.dirname(__file__), "backup")
 
 
 def obter_credenciais_padrao():
@@ -67,6 +70,24 @@ def salvar_configuracao(conexao):
     de nome de arquivo pedida pelo switch nesse comando.
     """
     return conexao.save_config()
+
+
+def fazer_backup(conexao, pasta_backup=PASTA_BACKUP):
+    """Salva um backup local da configuracao atual do switch.
+
+    O nome do arquivo usa o hostname atual do switch e a data/hora da
+    execucao, ex.: SWITCH_AUTOMATIZADO_20260728_210500.txt
+    """
+    config_atual = conexao.send_command("show running-config")
+    hostname = conexao.base_prompt
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    os.makedirs(pasta_backup, exist_ok=True)
+    caminho_arquivo = os.path.join(pasta_backup, f"{hostname}_{timestamp}.txt")
+    with open(caminho_arquivo, "w", encoding="utf-8") as arquivo:
+        arquivo.write(config_atual)
+
+    return caminho_arquivo
 
 
 def testar_conexao(host, usuario, senha):
