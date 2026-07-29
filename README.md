@@ -1,6 +1,7 @@
 # Desafio de Automação  
 
-Projeto desenvolvido para o desafio técnico de automação de redes 
+Projeto desenvolvido para o desafio técnico de automação de redes.
+
 O projeto é dividido em duas partes:
 
 - **Parte 1**: automação de configuração de um switch Cisco (VLANs + hostname) via
