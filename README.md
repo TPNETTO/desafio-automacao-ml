@@ -1,4 +1,4 @@
-# Desafio de Automação — Mercado Livre
+# Desafio de Automação  
 
 Projeto desenvolvido para o desafio técnico de automação de redes do Mercado Livre.
 O projeto é dividido em duas partes:
