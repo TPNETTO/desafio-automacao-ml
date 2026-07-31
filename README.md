@@ -222,11 +222,12 @@ poderia ser automatizada via API/script Python.
 
 | Seção do documento | Conteúdo |
 |---|---|
-| 1. Definição de parâmetros | IPs WAN, redes locais de exemplo, rede de túnel `169.255.1.0/30`, propostas de Phase 1 (IKE) e Phase 2 (IPSec) |
-| 2. Identificação de ferramentas/APIs | FortiOS REST API, PAN-OS XML/REST API, `pan-os-python`, `netmiko`, alternativas de gerenciamento centralizado |
-| 3. Passos de automação | Criação de objetos, zonas, Phase 1/2, interface de túnel, políticas de firewall, estabelecimento do túnel |
-| 4. Considerações específicas | Diferenças de terminologia, modelo de objetos, autenticação de API, formato de payload (JSON x XML) e algoritmos entre os dois fabricantes |
-| 5. Validação e alertas | Verificação de status do túnel (CLI/API) e estratégia de alertas em caso de falha ou divergência |
+| 1. Definição de Parâmetros | Topologia de exemplo, IPs WAN, redes locais, rede de túnel `169.255.1.0/30` (IP de cada extremidade), propostas de Phase 1 (IKE) e Phase 2 (IPSec) |
+| 2. Identificação de Ferramentas/APIs | FortiOS REST API, PAN-OS XML/REST API, SSH (Netmiko/Paramiko), FortiManager/Panorama, bibliotecas Python sugeridas |
+| 3. Passos de Automação | Sequência lógica do script para cada fabricante (objetos, Phase 1/2, interface de túnel, rota, política, commit) |
+| 4. Considerações Específicas | Diferenças de terminologia, formato de payload (JSON x XML), autenticação de API, compatibilidade de algoritmos e modo de política x rota |
+| 5. Validação de Configuração e Alertas | Verificação de status do túnel (CLI/API) em cada fabricante e estratégia de alertas em caso de falha ou divergência |
+| 6. Resumo do fluxo completo | Diagrama do fluxo de ponta a ponta do script de automação |
 
 Itens opcionais do desafio (scripts/configs de exemplo para os dois fabricantes e um
 script de teste de conectividade pelo túnel) ainda não foram desenvolvidos — dependem
