@@ -211,47 +211,57 @@ pela CLI, e o campo/endpoint equivalente usado nos scripts de automação (ver
 no laboratório (ver [`scripts-exemplo/README.md`](scripts-exemplo/README.md)). As
 colunas do **Palo Alto** seguem a sintaxe oficial do PAN-OS, mas não puderam ser
 executadas neste laboratório (interfaces de dataplane não detectadas) — são
-conceituais.
+conceituais. Os valores abaixo são os mesmos da topologia de exemplo da seção 1
+e dos nomes de objeto usados em [`scripts-exemplo/`](scripts-exemplo/), já
+preenchidos como se fossem aplicados de fato.
 
 ### 7.1 Phase 1 (IKE)
 
 | Parâmetro | Valor | Fortigate — GUI | Fortigate — CLI/Script | Palo Alto — GUI | Palo Alto — CLI/Script |
 |---|---|---|---|---|---|
-| Versão IKE | IKEv2 | VPN → IPsec Tunnels → Create New → Authentication → IKE Version | `set ike-version 2` | Network → IKE Gateways → General → Version | `set network ike gateway <nome> protocol ikev2 ike-crypto-profile <perfil>` |
-| Autenticação | Pre-shared key | VPN → IPsec Tunnels → Authentication → Pre-shared Key | `set psksecret <chave>` | Network → IKE Gateways → General → Pre-shared Key | `set network ike gateway <nome> authentication pre-shared-key key <chave>` |
-| Gateway remoto | IP estático do peer | VPN → IPsec Tunnels → Network → Remote Gateway | `set remote-gw <ip>` | Network → IKE Gateways → General → Peer Address | `set network ike gateway <nome> peer-address ip <ip>` |
-| Interface local | Interface WAN | VPN → IPsec Tunnels → Network → Interface | `set interface "<porta>"` | Network → IKE Gateways → General → Interface | `set network ike gateway <nome> local-address interface <interface>` |
-| Criptografia | AES-256¹ | VPN → IPsec Tunnels → Phase 1 Proposal → Encryption | `set proposal aes256-sha256` | Network → IKE Crypto Profiles → Encryption | `set network ike crypto-profiles ike-crypto-profiles <perfil> encryption aes-256-cbc` |
-| Hash | SHA-256 | (mesmo campo do proposal, combinado) | (mesmo campo) | Network → IKE Crypto Profiles → Authentication | `set network ike crypto-profiles ike-crypto-profiles <perfil> hash sha256` |
-| Grupo DH | Group 14 | VPN → IPsec Tunnels → Phase 1 Proposal → DH Group | `set dhgrp 14` | Network → IKE Crypto Profiles → DH Group | `set network ike crypto-profiles ike-crypto-profiles <perfil> dh-group group14` |
-| Lifetime | 28800s (8h) | VPN → IPsec Tunnels → Phase 1 Proposal → Key Lifetime | `set keylife 28800` | Network → IKE Crypto Profiles → Key Lifetime | `set network ike crypto-profiles ike-crypto-profiles <perfil> lifetime hours 8` |
+| Nome do túnel/gateway | `VPN-PaloAlto` (Fortigate) / `IKE-GW-FORTIGATE` (Palo Alto) | VPN → IPsec Tunnels → Create New → Name: `VPN-PaloAlto` | `edit "VPN-PaloAlto"` | Network → IKE Gateways → Add → Name: `IKE-GW-FORTIGATE` | `set network ike gateway IKE-GW-FORTIGATE` |
+| Versão IKE | IKEv2 | Authentication → IKE Version: `2` | `set ike-version 2` | General → Version: `IKEv2 only mode` | `set network ike gateway IKE-GW-FORTIGATE protocol ikev2 ike-crypto-profile IKE-FORTIGATE` |
+| Autenticação | Pre-shared key | Authentication → Pre-shared Key: `TrocarPorChaveSegura123!` | `set psksecret TrocarPorChaveSegura123!` | General → Pre-shared Key: `TrocarPorChaveSegura123!` | `set network ike gateway IKE-GW-FORTIGATE authentication pre-shared-key key TrocarPorChaveSegura123!` |
+| Gateway remoto (peer) | `198.51.100.20` | Network → Remote Gateway: Static IP Address `198.51.100.20` | `set remote-gw 198.51.100.20` | General → Peer Address: `203.0.113.10`¹ | `set network ike gateway IKE-GW-FORTIGATE peer-address ip 203.0.113.10` |
+| Interface local | `port2` (Fortigate) / `ethernet1/1` (Palo Alto) | Network → Interface: `port2` | `set interface "port2"` | General → Interface: `ethernet1/1` | `set network ike gateway IKE-GW-FORTIGATE local-address interface ethernet1/1` |
+| Criptografia | AES-256 | Phase 1 Proposal → Encryption: `AES256` | `set proposal aes256-sha256` | IKE Crypto Profiles → Encryption: `aes-256-cbc` | `set network ike crypto-profiles ike-crypto-profiles IKE-FORTIGATE encryption aes-256-cbc` |
+| Hash | SHA-256 | Phase 1 Proposal → Authentication: `SHA256` | (mesmo campo do proposal acima) | IKE Crypto Profiles → Authentication: `sha256` | `set network ike crypto-profiles ike-crypto-profiles IKE-FORTIGATE hash sha256` |
+| Grupo DH | Group 14 | Phase 1 Proposal → DH Group: `14` | `set dhgrp 14` | IKE Crypto Profiles → DH Group: `group14` | `set network ike crypto-profiles ike-crypto-profiles IKE-FORTIGATE dh-group group14` |
+| Lifetime | 28800s (8h) | Phase 1 Proposal → Key Lifetime: `28800` | `set keylife 28800` | IKE Crypto Profiles → Key Lifetime: `8 hours` | `set network ike crypto-profiles ike-crypto-profiles IKE-FORTIGATE lifetime hours 8` |
 
-¹ No laboratório, o firmware do Fortigate (build LENC/exportação restrita) só
-aceita propostas `des-*` — foi usado `des-sha256` como exemplo funcional. Ver
-nota em [`scripts-exemplo/README.md`](scripts-exemplo/README.md).
+¹ Do ponto de vista do Palo Alto, o peer é o Fortigate — por isso o IP aqui é o
+WAN do Fortigate (`203.0.113.10`), o inverso da linha do Fortigate (que aponta
+para o WAN do Palo Alto, `198.51.100.20`).
 
 ### 7.2 Phase 2 (IPSec)
 
 | Parâmetro | Valor | Fortigate — GUI | Fortigate — CLI/Script | Palo Alto — GUI | Palo Alto — CLI/Script |
 |---|---|---|---|---|---|
-| Protocolo | ESP | (implícito no IPsec Tunnel) | (implícito) | Network → IPSec Crypto Profiles → ESP | `set network ike crypto-profiles ipsec-crypto-profiles <perfil> esp encryption aes-256-cbc` |
-| Criptografia | AES-256¹ | VPN → IPsec Tunnels → Phase 2 Selectors → Encryption | `set proposal aes256-sha256` | Network → IPSec Crypto Profiles → ESP → Encryption | `set network ike crypto-profiles ipsec-crypto-profiles <perfil> esp encryption aes-256-cbc` |
-| Hash (autenticação) | SHA-256 | (mesmo campo do proposal) | (mesmo campo) | Network → IPSec Crypto Profiles → ESP → Authentication | `set network ike crypto-profiles ipsec-crypto-profiles <perfil> esp authentication sha256` |
-| PFS | Group 14 | VPN → IPsec Tunnels → Phase 2 Selectors → Enable PFS / DH Group | `set pfs enable` + `set dhgrp 14` | Network → IPSec Crypto Profiles → DH Group | `set network ike crypto-profiles ipsec-crypto-profiles <perfil> dh-group group14` |
-| Lifetime | 3600s (1h) | VPN → IPsec Tunnels → Phase 2 Selectors → Auto-negotiate → Key Lifetime | `set keylifeseconds 3600` | Network → IPSec Crypto Profiles → Lifetime | `set network ike crypto-profiles ipsec-crypto-profiles <perfil> lifetime hours 1` |
-| Redes de interesse | LAN local ↔ LAN remota | VPN → IPsec Tunnels → Phase 2 Selectors → Local/Remote Address | `set src-subnet <rede> ` + `set dst-subnet <rede>` | (definido via política de segurança + roteamento) | — |
+| Nome | `VPN-PaloAlto-p2` (Fortigate) / `TUNNEL-FORTIGATE` (Palo Alto) | Phase 2 Selectors → Add: `VPN-PaloAlto-p2` | `edit "VPN-PaloAlto-p2"` | Network → IPSec Tunnels → Add: `TUNNEL-FORTIGATE` | `set network tunnel ipsec TUNNEL-FORTIGATE` |
+| Protocolo | ESP | (implícito no IPsec Tunnel) | (implícito) | IPSec Crypto Profiles → ESP | `set network ike crypto-profiles ipsec-crypto-profiles IPSEC-FORTIGATE esp encryption aes-256-cbc` |
+| Criptografia | AES-256 | Phase 2 → Encryption: `AES256` | `set proposal aes256-sha256` | IPSec Crypto Profiles → ESP → Encryption: `aes-256-cbc` | `set network ike crypto-profiles ipsec-crypto-profiles IPSEC-FORTIGATE esp encryption aes-256-cbc` |
+| Hash (autenticação) | SHA-256 | Phase 2 → Authentication: `SHA256` | (mesmo campo do proposal) | IPSec Crypto Profiles → ESP → Authentication: `sha256` | `set network ike crypto-profiles ipsec-crypto-profiles IPSEC-FORTIGATE esp authentication sha256` |
+| PFS | Group 14 | Phase 2 → Enable PFS: `on`, DH Group: `14` | `set pfs enable` + `set dhgrp 14` | IPSec Crypto Profiles → DH Group: `group14` | `set network ike crypto-profiles ipsec-crypto-profiles IPSEC-FORTIGATE dh-group group14` |
+| Lifetime | 3600s (1h) | Phase 2 → Key Lifetime: `3600` | `set keylifeseconds 3600` | IPSec Crypto Profiles → Lifetime: `1 hour` | `set network ike crypto-profiles ipsec-crypto-profiles IPSEC-FORTIGATE lifetime hours 1` |
+| Rede local | `192.168.10.0/24` | Phase 2 → Local Address: `192.168.10.0/255.255.255.0` | `set src-subnet 192.168.10.0 255.255.255.0` | (definida via zona `trust` + roteamento) | `set network interface ethernet ethernet1/2 layer3 ip 192.168.10.1/24`³ |
+| Rede remota | `192.168.20.0/24` | Phase 2 → Remote Address: `192.168.20.0/255.255.255.0` | `set dst-subnet 192.168.20.0 255.255.255.0` | (definida via zona `vpn` + roteamento) | — |
+
+³ Do lado Palo Alto, `192.168.10.0/24` é a rede **remota** (atrás do Fortigate);
+o exemplo de IP de interface local do Palo Alto é `192.168.20.1/24` em
+`ethernet1/2`.
 
 ### 7.3 Demais itens (interface de túnel, rota, política)
 
-| Item | Fortigate — GUI | Fortigate — CLI/Script | Palo Alto — GUI | Palo Alto — CLI/Script |
-|---|---|---|---|---|
-| Interface de túnel | Network → Interfaces → (interface criada com o nome da Phase1) → IP/Netmask² | `config system interface` → `edit "<nome>"` → `set ip <ip> 255.255.255.255` → `set remote-ip <ip_remoto> 255.255.255.255` | Network → Interfaces → Tunnel → Add tunnel.X → IPv4 | `set network interface tunnel units tunnel.1 ip <ip>/30` |
-| Zona (Palo Alto) | — (não aplicável no Fortigate) | — | Network → Zones → Add | `set zone vpn network layer3 tunnel.1` |
-| Rota estática | Network → Static Routes → Create New | `config router static` → `edit 0` → `set dst <rede>` → `set device "<interface_tunel>"` | Network → Virtual Routers → Static Routes → Add | `set network virtual-router default routing-table ip static-route <nome> destination <rede> interface tunnel.1` |
-| Política de firewall/segurança | Policy & Objects → Firewall Policy → Create New | `config firewall policy` → `edit 0` → `set srcintf/dstintf/srcaddr/dstaddr/action` | Policies → Security → Add | `set rulebase security rules <nome> from <zona_origem> to <zona_destino> action allow` |
-| Commit | (implícito a cada alteração) | (implícito) | Commit (canto superior direito) | `commit` |
+| Item | Valor | Fortigate — GUI | Fortigate — CLI/Script | Palo Alto — GUI | Palo Alto — CLI/Script |
+|---|---|---|---|---|---|
+| Interface de túnel (local) | Fortigate: `169.255.1.1/32`⁴ · Palo Alto: `169.255.1.2/30` | Network → Interfaces → `VPN-PaloAlto` → IP/Netmask: `169.255.1.1/255.255.255.255` | `config system interface` → `edit "VPN-PaloAlto"` → `set ip 169.255.1.1 255.255.255.255` → `set remote-ip 169.255.1.2 255.255.255.255` | Network → Interfaces → Tunnel → Add `tunnel.1` → IPv4: `169.255.1.2/30` | `set network interface tunnel units tunnel.1 ip 169.255.1.2/30` |
+| Zona (Palo Alto) | `untrust` / `trust` / `vpn` | — (não aplicável no Fortigate) | — | Network → Zones → Add `untrust`/`trust`/`vpn` | `set zone vpn network layer3 tunnel.1` |
+| Rota estática | Fortigate: destino `192.168.20.0/24` via `VPN-PaloAlto` · Palo Alto: destino `192.168.10.0/24` via `tunnel.1` | Network → Static Routes → Destination: `192.168.20.0/24`, Interface: `VPN-PaloAlto` | `config router static` → `edit 0` → `set dst 192.168.20.0 255.255.255.0` → `set device "VPN-PaloAlto"` | Network → Virtual Routers → `default` → Static Routes → Add `to-fortigate-lan` | `set network virtual-router default routing-table ip static-route to-fortigate-lan destination 192.168.10.0/24 interface tunnel.1` |
+| Política de firewall/segurança | Fortigate: `LAN-to-PaloAlto` / `PaloAlto-to-LAN` · Palo Alto: `LAN-VPN` | Policy & Objects → Firewall Policy → Create New: `LAN-to-PaloAlto` (port3 → VPN-PaloAlto) | `config firewall policy` → `edit 0` → `set srcintf "port3"` → `set dstintf "VPN-PaloAlto"` → `set srcaddr "LAN-FORTIGATE"` → `set dstaddr "LAN-PALOALTO"` → `set action accept` | Policies → Security → Add `LAN-VPN` (from `trust` to `vpn`) | `set rulebase security rules LAN-VPN from trust to vpn source any destination any application any service any action allow` |
+| Commit | — | (implícito a cada alteração) | (implícito) | Commit (canto superior direito) | `commit` |
 
-² O Fortigate exige máscara `/32` na interface de túnel, com o IP da outra
+⁴ O Fortigate exige máscara `/32` na interface de túnel, com o IP da outra
 ponta em um campo `remote-ip` separado — diferente da notação `/30` usada como
 simplificação na seção 1. Detalhe descoberto durante a automação real no
-laboratório (ver `scripts-exemplo/exemplo_fortigate_vpn_ipsec.py`).
+laboratório (ver `scripts-exemplo/exemplo_fortigate_vpn_ipsec.py`). O Palo Alto
+aceita a notação `/30` normalmente na interface de túnel.
