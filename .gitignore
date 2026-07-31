@@ -17,8 +17,8 @@ __pycache__/
 *.pyo
 
 # Backups de configuracao gerados em tempo de execucao
-backend/backup/*.txt
-!backend/backup/.gitkeep
+parte1-automacao-switch/backend/backup/*.txt
+!parte1-automacao-switch/backend/backup/.gitkeep
 
 # Streamlit (segredos locais; config.toml de tema fica versionado)
 .streamlit/secrets.toml

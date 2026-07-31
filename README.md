@@ -11,21 +11,27 @@ O projeto é dividido em duas partes:
 
 ## Estrutura do projeto
 
+O repositório é dividido em uma pasta por parte do desafio, com as ferramentas
+compartilhadas (ambiente virtual, dependências, tema do Streamlit) na raiz:
+
 ```
-├── backend/
-│   ├── automacao_switch.py   # Conexão SSH e automação via Netmiko
-│   └── backup/                # Backups de configuração gerados em tempo de execução
-│                               # (fora do Git — contêm hash de senha do switch)
-├── frontend/
-│   ├── app.py                 # Interface Streamlit
-│   └── assets/                 # Logo usado no banner do frontend
+├── parte1-automacao-switch/
+│   ├── backend/
+│   │   ├── automacao_switch.py   # Conexão SSH e automação via Netmiko
+│   │   └── backup/                # Backups de configuração gerados em tempo de execução
+│   │                               # (fora do Git — contêm hash de senha do switch)
+│   ├── frontend/
+│   │   ├── app.py                 # Interface Streamlit
+│   │   └── assets/                 # Logo usado no banner do frontend
+│   └── evidencias/
+│       ├── frontend/               # Screenshots do frontend
+│       ├── switch_cli/             # Backup de exemplo (redigido) e evidências da CLI
+│       ├── commits/                # Histórico de commits (capturas)
+│       └── desenvolvimento_claude_code/   # Sessão de codificação assistida
+├── parte2-vpn-ipsec/
+│   └── plano_vpn_ipsec_fortigate_paloalto.md   # Documento da Parte 2
 ├── .streamlit/
 │   └── config.toml             # Tema visual do Streamlit
-├── docs/
-│   └── plano_vpn_ipsec_fortigate_paloalto.md   # Documento da Parte 2
-├── evidencias/
-│   ├── frontend/               # Screenshots do frontend
-│   └── switch_cli/             # Backup de exemplo (redigido) e evidências da CLI
 ├── requirements.txt
 ├── .env                        # Credenciais reais (NUNCA vai para o Git)
 └── .gitignore
@@ -71,7 +77,7 @@ Com o ambiente virtual ativo (veja "Instalação" acima), no `cmd`/PowerShell do
 a partir da raiz do projeto, execute:
 
 ```bat
-venv\Scripts\python -m streamlit run frontend\app.py
+venv\Scripts\python -m streamlit run parte1-automacao-switch\frontend\app.py
 ```
 
 Isso sobe um servidor local. O terminal mostra algo como:
@@ -89,8 +95,9 @@ outro computador na mesma rede, use a `Network URL` mostrada no terminal.
 
 Para parar o servidor, volte ao terminal e aperte `Ctrl+C`.
 
-> **Atenção:** o Streamlit reexecuta `frontend/app.py` a cada interação, mas **não**
-> recarrega automaticamente módulos importados (como `backend/automacao_switch.py`).
+> **Atenção:** o Streamlit reexecuta `parte1-automacao-switch/frontend/app.py` a cada
+> interação, mas **não** recarrega automaticamente módulos importados (como
+> `parte1-automacao-switch/backend/automacao_switch.py`).
 > Se você alterar esse arquivo, um `F5` no navegador não é suficiente — pare o servidor
 > (`Ctrl+C`) e rode o comando `streamlit run` de novo para a mudança valer.
 
@@ -111,23 +118,23 @@ O Streamlit abre uma página no navegador onde é possível:
 
 Exemplo do formulário rodando localmente (`http://localhost:8501`):
 
-![Formulário do frontend Streamlit](evidencias/frontend/Formulario.png)
+![Formulário do frontend Streamlit](parte1-automacao-switch/evidencias/frontend/Formulario.png)
 
 ### Evidências de execução contra o switch físico
 
 CLI do switch (`show vlan`, prompt mudando de `TPNETTO#` para `SWITCH_AUTOMATIZADO#`)
 lado a lado com o frontend, mostrando VLANs 10/20/50 e hostname aplicados:
 
-![CLI do switch e frontend - VLANs e hostname aplicados](evidencias/frontend/frontend_e_cli_vlans_hostname.png)
+![CLI do switch e frontend - VLANs e hostname aplicados](parte1-automacao-switch/evidencias/frontend/frontend_e_cli_vlans_hostname.png)
 
 Validação pós-configuração concluída com sucesso, com backup gerado e disponível
 para download:
 
-![CLI do switch e frontend - validação com sucesso](evidencias/frontend/frontend_e_cli_validacao_sucesso.png)
+![CLI do switch e frontend - validação com sucesso](parte1-automacao-switch/evidencias/frontend/frontend_e_cli_validacao_sucesso.png)
 
-Backup local gerado em `backend/backup/` (nome = hostname + data/hora):
+Backup local gerado em `parte1-automacao-switch/backend/backup/` (nome = hostname + data/hora):
 
-![Pasta local de backups](evidencias/switch_cli/backup_pasta_local.png)
+![Pasta local de backups](parte1-automacao-switch/evidencias/switch_cli/backup_pasta_local.png)
 
 ## Notas de implementação
 
@@ -139,16 +146,17 @@ Backup local gerado em `backend/backup/` (nome = hostname + data/hora):
   esperado (VLANs e hostname), sinalizando qualquer divergência.
 - Credenciais nunca ficam hardcoded no código — são lidas do `.env` via
   `python-dotenv`.
-- Os backups reais (`backend/backup/*.txt`) ficam fora do Git de propósito: o
-  `show running-config` do switch inclui o hash da senha do usuário admin
+- Os backups reais (`parte1-automacao-switch/backend/backup/*.txt`) ficam fora do Git de
+  propósito: o `show running-config` do switch inclui o hash da senha do usuário admin
   (`secret 9 ...`), que não deve ir para um repositório público. Um exemplo real
   já aplicado, com esse hash removido, está em
-  `evidencias/switch_cli/SWITCH_AUTOMATIZADO_backup_exemplo.txt` como evidência do
-  entregável.
+  `parte1-automacao-switch/evidencias/switch_cli/SWITCH_AUTOMATIZADO_backup_exemplo.txt`
+  como evidência do entregável.
 
 ## Comandos aplicados no switch
 
-Ao clicar em "Aplicar configuração", o backend ([`backend/automacao_switch.py`](backend/automacao_switch.py))
+Ao clicar em "Aplicar configuração", o backend
+([`parte1-automacao-switch/backend/automacao_switch.py`](parte1-automacao-switch/backend/automacao_switch.py))
 envia estes comandos via SSH (Netmiko, `device_type=cisco_ios`), na ordem abaixo,
 usando os valores preenchidos no formulário:
 
@@ -157,9 +165,9 @@ usando os valores preenchidos no formulário:
 | Configurar cada VLAN | `vlan <id>` seguido de `name <nome>` (repetido para cada VLAN) |
 | Alterar hostname | `hostname <novo_hostname>` |
 | Salvar na NVRAM | `write mem` (equivalente a `copy running-config startup-config`) |
-| Gerar backup | `show running-config` (saída salva em `backend/backup/<hostname>_<data_hora>.txt`) |
+| Gerar backup | `show running-config` (saída salva em `parte1-automacao-switch/backend/backup/<hostname>_<data_hora>.txt`) |
 | Validar após aplicar | `show vlan brief` (conferido contra os IDs/nomes esperados) |
-| Teste de conexão (`python backend\automacao_switch.py`) | `show version` (não altera nada no switch) |
+| Teste de conexão (`python parte1-automacao-switch\backend\automacao_switch.py`) | `show version` (não altera nada no switch) |
 
 ## Comandos úteis via terminal (cmd/PowerShell)
 
@@ -174,10 +182,10 @@ pip install -r requirements.txt
 
 :: Testar só a conexão SSH com o switch, sem alterar nada (usa as
 :: credenciais do .env e executa "show version")
-python backend\automacao_switch.py
+python parte1-automacao-switch\backend\automacao_switch.py
 
 :: Subir o frontend Streamlit
-streamlit run frontend\app.py
+streamlit run parte1-automacao-switch\frontend\app.py
 
 :: Sair do ambiente virtual
 deactivate
@@ -201,5 +209,7 @@ deactivate
 - Parte 1 (automação do switch): frontend integrado ao backend e testado contra o
   switch físico (Catalyst 2960-X, `10.10.90.6`) — VLANs, hostname, salvamento em
   NVRAM, backup e validação funcionando de ponta a ponta.
-- Parte 2 (planejamento de VPN IPSec): documento ainda **pendente** — será
-  adicionado em `docs/plano_vpn_ipsec_fortigate_paloalto.md`.
+- Parte 2 (planejamento de VPN IPSec): documento concluído em
+  [`parte2-vpn-ipsec/plano_vpn_ipsec_fortigate_paloalto.md`](parte2-vpn-ipsec/plano_vpn_ipsec_fortigate_paloalto.md)
+  — scripts/configs de exemplo e teste de conectividade (itens opcionais) ainda
+  **pendentes**.
