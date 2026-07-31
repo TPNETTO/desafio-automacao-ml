@@ -1,13 +1,14 @@
-# Desafio de Automação  
+# Desafio de Automação
 
-Projeto desenvolvido para o desafio técnico de automação de redes.
+Projeto desenvolvido para o desafio técnico de automação de redes, dividido em duas
+partes:
 
-O projeto é dividido em duas partes:
-
-- **Parte 1**: automação de configuração de um switch Cisco (VLANs + hostname) via
-  Netmiko, com frontend em Streamlit, backup automático e validação pós-configuração.
-- **Parte 2**: planejamento (documentação) da automação de uma VPN IPSec entre um
-  Fortigate e um Palo Alto, sem exigir implementação funcional.
+- **[Parte 1 — Automação do Switch Cisco](#parte-1--automação-do-switch-cisco)**:
+  automação de configuração de um switch Cisco (VLANs + hostname) via Netmiko, com
+  frontend em Streamlit, backup automático e validação pós-configuração.
+- **[Parte 2 — VPN IPSec (Fortigate ↔ Palo Alto)](#parte-2--vpn-ipsec-fortigate--palo-alto)**:
+  planejamento (documentação) da automação de uma VPN IPSec entre um Fortigate e um
+  Palo Alto, sem exigir implementação funcional.
 
 ## Estrutura do projeto
 
@@ -37,13 +38,17 @@ compartilhadas (ambiente virtual, dependências, tema do Streamlit) na raiz:
 └── .gitignore
 ```
 
-## Pré-requisitos
+---
+
+## Parte 1 — Automação do Switch Cisco
+
+### Pré-requisitos
 
 - Python 3.10 ou superior
 - Acesso de rede ao switch Cisco (SSH habilitado)
 - Credenciais válidas de um usuário com privilégio 15 no switch
 
-## Instalação
+### Instalação
 
 1. Clone o repositório e entre na pasta do projeto:
    ```bash
@@ -71,7 +76,7 @@ compartilhadas (ambiente virtual, dependências, tema do Streamlit) na raiz:
    SWITCH_PASSWORD=sua_senha_aqui
    ```
 
-## Como usar o frontend
+### Como usar o frontend
 
 Com o ambiente virtual ativo (veja "Instalação" acima), no `cmd`/PowerShell do Windows,
 a partir da raiz do projeto, execute:
@@ -136,7 +141,7 @@ Backup local gerado em `parte1-automacao-switch/backend/backup/` (nome = hostnam
 
 ![Pasta local de backups](parte1-automacao-switch/evidencias/switch_cli/backup_pasta_local.png)
 
-## Notas de implementação
+### Notas de implementação
 
 - A automação usa [Netmiko](https://github.com/ktbyers/netmiko) (`device_type
   cisco_ios`) para conexão SSH com o switch.
@@ -153,7 +158,7 @@ Backup local gerado em `parte1-automacao-switch/backend/backup/` (nome = hostnam
   `parte1-automacao-switch/evidencias/switch_cli/SWITCH_AUTOMATIZADO_backup_exemplo.txt`
   como evidência do entregável.
 
-## Comandos aplicados no switch
+### Comandos aplicados no switch
 
 Ao clicar em "Aplicar configuração", o backend
 ([`parte1-automacao-switch/backend/automacao_switch.py`](parte1-automacao-switch/backend/automacao_switch.py))
@@ -169,7 +174,7 @@ usando os valores preenchidos no formulário:
 | Validar após aplicar | `show vlan brief` (conferido contra os IDs/nomes esperados) |
 | Teste de conexão (`python parte1-automacao-switch\backend\automacao_switch.py`) | `show version` (não altera nada no switch) |
 
-## Comandos úteis via terminal (cmd/PowerShell)
+### Comandos úteis via terminal (cmd/PowerShell)
 
 Todos a partir da raiz do projeto, com o ambiente virtual já criado:
 
@@ -191,7 +196,7 @@ streamlit run parte1-automacao-switch\frontend\app.py
 deactivate
 ```
 
-## Solução de problemas
+### Solução de problemas
 
 - **"Router prompt not found" ou hostname aparece truncado após aplicar**: normalmente
   sinal de que o servidor Streamlit ainda está com uma versão antiga do backend
@@ -204,12 +209,36 @@ deactivate
   formulário (ou no `.env`), e se a máquina que roda o Streamlit tem acesso de rede ao
   switch na porta 22 (SSH).
 
-## Status
+---
 
-- Parte 1 (automação do switch): frontend integrado ao backend e testado contra o
+## Parte 2 — VPN IPSec (Fortigate ↔ Palo Alto)
+
+Documento de planejamento — sem exigir uma VPN funcional — descrevendo como a criação
+de um túnel IPSec site-to-site entre um firewall Fortigate e um firewall Palo Alto
+poderia ser automatizada via API/script Python.
+
+📄 **Documento completo:**
+[`parte2-vpn-ipsec/plano_vpn_ipsec_fortigate_paloalto.md`](parte2-vpn-ipsec/plano_vpn_ipsec_fortigate_paloalto.md)
+
+| Seção do documento | Conteúdo |
+|---|---|
+| 1. Definição de parâmetros | IPs WAN, redes locais de exemplo, rede de túnel `169.255.1.0/30`, propostas de Phase 1 (IKE) e Phase 2 (IPSec) |
+| 2. Identificação de ferramentas/APIs | FortiOS REST API, PAN-OS XML/REST API, `pan-os-python`, `netmiko`, alternativas de gerenciamento centralizado |
+| 3. Passos de automação | Criação de objetos, zonas, Phase 1/2, interface de túnel, políticas de firewall, estabelecimento do túnel |
+| 4. Considerações específicas | Diferenças de terminologia, modelo de objetos, autenticação de API, formato de payload (JSON x XML) e algoritmos entre os dois fabricantes |
+| 5. Validação e alertas | Verificação de status do túnel (CLI/API) e estratégia de alertas em caso de falha ou divergência |
+
+Itens opcionais do desafio (scripts/configs de exemplo para os dois fabricantes e um
+script de teste de conectividade pelo túnel) ainda não foram desenvolvidos — dependem
+de uma simulação em laboratório, combinada como próximo passo.
+
+---
+
+## Status geral
+
+- **Parte 1** (automação do switch): frontend integrado ao backend e testado contra o
   switch físico (Catalyst 2960-X, `10.10.90.6`) — VLANs, hostname, salvamento em
   NVRAM, backup e validação funcionando de ponta a ponta.
-- Parte 2 (planejamento de VPN IPSec): documento concluído em
-  [`parte2-vpn-ipsec/plano_vpn_ipsec_fortigate_paloalto.md`](parte2-vpn-ipsec/plano_vpn_ipsec_fortigate_paloalto.md)
-  — scripts/configs de exemplo e teste de conectividade (itens opcionais) ainda
+- **Parte 2** (planejamento de VPN IPSec): documento concluído (ver seção acima) —
+  scripts/configs de exemplo e teste de conectividade (itens opcionais) ainda
   **pendentes**.
