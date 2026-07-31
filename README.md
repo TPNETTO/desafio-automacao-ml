@@ -137,6 +137,12 @@ divergências):
 
 ![CLI do switch e frontend - VLANs, hostname e validação com sucesso](parte1-automacao-switch/evidencias/frontend/frontend_e_cli_validacao_sucesso.png)
 
+A lógica de validação também detecta e alerta divergências corretamente — teste
+feito forçando um valor esperado propositalmente diferente do aplicado (sem
+afetar a configuração real do switch, que permaneceu correta):
+
+![Frontend - alerta de divergência na validação](parte1-automacao-switch/evidencias/frontend/frontend_validacao_alerta_divergencia.png)
+
 Backup local gerado em `parte1-automacao-switch/backend/backup/` (nome = hostname + data/hora):
 
 ![Pasta local de backups](parte1-automacao-switch/evidencias/switch_cli/backup_pasta_local.png)
