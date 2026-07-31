@@ -61,6 +61,26 @@ do tempo disponível para este item bônus).
 O script tem um guard (`raise SystemExit`) no final para deixar explícito que
 não deve ser executado sem antes resolver esse bloqueio.
 
+## `teste_conectividade_vpn.py` — parcialmente funcional, testado
+
+Script de teste de conectividade (item opcional), seguindo a "Estratégia de
+validação proposta" da seção 5 do plano: consulta o status do túnel (IKE/IPSec
+SA) em cada fabricante via API e só tenta um `ping` pelo túnel se os dois
+lados reportarem SA estabelecida — evitando testar tráfego num túnel que nem
+terminou de negociar.
+
+- **Checagem do Fortigate**: funcional e testada de verdade contra a API REST
+  — retornou corretamente o status real do túnel (`down`, com o `proxyid`
+  mostrando as redes `192.168.10.0/24` ↔ `192.168.20.0/24` configuradas).
+- **Checagem do Palo Alto**: conceitual (usa `show vpn ike-sa` via API XML),
+  pulada automaticamente se `PA_API_KEY` não estiver definida — mesmo bloqueio
+  de hardware do `exemplo_paloalto_vpn_ipsec.py`.
+- **Ping pelo túnel**: só é tentado se as duas checagens acima retornarem "up".
+  Neste laboratório isso nunca acontece, então o script sempre reporta a
+  divergência corretamente (`exit code 1`) em vez de travar ou dar falso
+  positivo — esse é o comportamento esperado e correto dado o estado real do
+  ambiente, não uma falha do script.
+
 ## Por que incluir isso, mesmo incompleto
 
 O desafio explicitamente trata a simulação funcional da VPN como bônus, não

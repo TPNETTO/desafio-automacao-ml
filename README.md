@@ -239,10 +239,13 @@ poderia ser automatizada via API/script Python.
 | 5. Validação de Configuração e Alertas | Verificação de status do túnel (CLI/API) em cada fabricante e estratégia de alertas em caso de falha ou divergência |
 | 6. Resumo do fluxo completo | Diagrama do fluxo de ponta a ponta do script de automação |
 
-Scripts de exemplo de automação para os dois fabricantes estão em
+Scripts de exemplo de automação para os dois fabricantes, mais um script de
+teste de conectividade, estão em
 [`parte2-vpn-ipsec/scripts-exemplo/`](parte2-vpn-ipsec/scripts-exemplo/): um script
-funcional testado contra um Fortigate real via REST API, e um script conceitual para
-o lado Palo Alto (ver o README da pasta para detalhes de cada um).
+de configuração funcional testado contra um Fortigate real via REST API, um
+script conceitual para o lado Palo Alto, e um script de teste de conectividade
+(checagem de status funcional no Fortigate, conceitual no Palo Alto) — ver o
+README da pasta para detalhes de cada um.
 
 ---
 
