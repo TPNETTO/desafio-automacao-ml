@@ -8,7 +8,7 @@ partes:
   frontend em Streamlit, backup automático e validação pós-configuração.
 - **[Parte 2 — VPN IPSec (Fortigate ↔ Palo Alto)](#parte-2--vpn-ipsec-fortigate--palo-alto)**:
   planejamento (documentação) da automação de uma VPN IPSec entre um Fortigate e um
-  Palo Alto, sem exigir implementação funcional.
+  Palo Alto.
 
 ## Estrutura do projeto
 
