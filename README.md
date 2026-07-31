@@ -208,6 +208,10 @@ deactivate
 - **Erro de autenticação/timeout ao aplicar**: confira host, usuário e senha no
   formulário (ou no `.env`), e se a máquina que roda o Streamlit tem acesso de rede ao
   switch na porta 22 (SSH).
+- **`Error: Invalid value: File does not exist: frontend\app.py`**: sinal de que você
+  está usando um comando antigo (de antes da reorganização em pastas por parte do
+  desafio) salvo no histórico do terminal. O caminho correto agora é
+  `parte1-automacao-switch\frontend\app.py` (ver "Como usar o frontend" acima).
 
 ---
 
