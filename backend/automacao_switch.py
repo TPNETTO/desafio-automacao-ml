@@ -82,17 +82,27 @@ def salvar_configuracao(conexao):
 def fazer_backup(conexao, pasta_backup=PASTA_BACKUP):
     """Salva um backup local da configuracao atual do switch.
 
+    Inclui tanto o 'show running-config' quanto o 'show vlan brief', pois a
+    running-config nao deixa tao visivel quais portas estao em cada VLAN.
+
     O nome do arquivo usa o hostname atual do switch e a data/hora da
     execucao, ex.: SWITCH_AUTOMATIZADO_20260728_210500.txt
     """
     config_atual = conexao.send_command("show running-config")
+    vlans_atuais = conexao.send_command("show vlan brief")
     hostname = conexao.base_prompt
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    conteudo = (
+        f"{config_atual}\n"
+        f"\n! ---- show vlan brief ----\n\n"
+        f"{vlans_atuais}\n"
+    )
 
     os.makedirs(pasta_backup, exist_ok=True)
     caminho_arquivo = os.path.join(pasta_backup, f"{hostname}_{timestamp}.txt")
     with open(caminho_arquivo, "w", encoding="utf-8") as arquivo:
-        arquivo.write(config_atual)
+        arquivo.write(conteudo)
 
     return caminho_arquivo
 
