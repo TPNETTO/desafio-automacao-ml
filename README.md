@@ -113,9 +113,10 @@ O Streamlit abre uma página no navegador onde é possível:
   partir do `.env`, mas editáveis na tela)
 - Definir o novo hostname do switch
 - Configurar até 3 VLANs, com ID e nome editáveis (vem pré-preenchido com
-  10/`VLAN_DADOS`, 20/`VLAN_VOZ` e 50/`VLAN_SEGURANÇA`, mas os IDs podem ser
-  alterados livremente — o formulário valida que os três IDs são diferentes
-  entre si antes de aplicar)
+  10/`VLAN_DADOS`, 20/`VLAN_VOZ` e 50/`VLAN_SEGURANCA` — sem cedilha, pois o
+  IOS do switch não lida bem com caracteres acentuados no nome da VLAN —, mas
+  os IDs podem ser alterados livremente — o formulário valida que os três IDs
+  são diferentes entre si antes de aplicar)
 - Clicar em **"Aplicar configuração"** para, de fato, conectar via SSH no switch e
   executar todo o fluxo: aplicar VLANs, alterar hostname, salvar na NVRAM, gerar
   backup local (com botão para baixar) e validar o resultado — cada etapa concluída
@@ -128,15 +129,13 @@ Exemplo do formulário rodando localmente (`http://localhost:8501`):
 
 ### Evidências de execução contra o switch físico
 
-CLI do switch (`show vlan`, prompt mudando de `TPNETTO#` para `SWITCH_AUTOMATIZADO#`)
-lado a lado com o frontend, mostrando VLANs 10/20/50 e hostname aplicados:
+CLI do switch e frontend lado a lado: prompt mudando de `TPNETTO#` para
+`SWITCH_AUTOMATIZADO#`, `show vlan` com as VLANs 10/20/50 aplicadas e ativas, e
+o frontend mostrando o fluxo completo de sucesso (VLANs, hostname, NVRAM,
+backup gerado e disponível para download, e validação pós-configuração sem
+divergências):
 
-![CLI do switch e frontend - VLANs e hostname aplicados](parte1-automacao-switch/evidencias/frontend/frontend_e_cli_vlans_hostname.png)
-
-Validação pós-configuração concluída com sucesso, com backup gerado e disponível
-para download:
-
-![CLI do switch e frontend - validação com sucesso](parte1-automacao-switch/evidencias/frontend/frontend_e_cli_validacao_sucesso.png)
+![CLI do switch e frontend - VLANs, hostname e validação com sucesso](parte1-automacao-switch/evidencias/frontend/frontend_e_cli_validacao_sucesso.png)
 
 Backup local gerado em `parte1-automacao-switch/backend/backup/` (nome = hostname + data/hora):
 
