@@ -198,3 +198,60 @@ parcialmente configurado.
         |
 7. Reportar sucesso ou alerta de divergência
 ```
+
+---
+
+## 7. Referência de Aplicação — GUI, CLI e Script/API
+
+Tabela de consulta rápida: para cada parâmetro do túnel, como aplicá-lo pela GUI,
+pela CLI, e o campo/endpoint equivalente usado nos scripts de automação (ver
+[`scripts-exemplo/`](scripts-exemplo/)).
+
+**Nota sobre as colunas:** as colunas do **Fortigate** foram testadas e validadas
+no laboratório (ver [`scripts-exemplo/README.md`](scripts-exemplo/README.md)). As
+colunas do **Palo Alto** seguem a sintaxe oficial do PAN-OS, mas não puderam ser
+executadas neste laboratório (interfaces de dataplane não detectadas) — são
+conceituais.
+
+### 7.1 Phase 1 (IKE)
+
+| Parâmetro | Valor | Fortigate — GUI | Fortigate — CLI/Script | Palo Alto — GUI | Palo Alto — CLI/Script |
+|---|---|---|---|---|---|
+| Versão IKE | IKEv2 | VPN → IPsec Tunnels → Create New → Authentication → IKE Version | `set ike-version 2` | Network → IKE Gateways → General → Version | `set network ike gateway <nome> protocol ikev2 ike-crypto-profile <perfil>` |
+| Autenticação | Pre-shared key | VPN → IPsec Tunnels → Authentication → Pre-shared Key | `set psksecret <chave>` | Network → IKE Gateways → General → Pre-shared Key | `set network ike gateway <nome> authentication pre-shared-key key <chave>` |
+| Gateway remoto | IP estático do peer | VPN → IPsec Tunnels → Network → Remote Gateway | `set remote-gw <ip>` | Network → IKE Gateways → General → Peer Address | `set network ike gateway <nome> peer-address ip <ip>` |
+| Interface local | Interface WAN | VPN → IPsec Tunnels → Network → Interface | `set interface "<porta>"` | Network → IKE Gateways → General → Interface | `set network ike gateway <nome> local-address interface <interface>` |
+| Criptografia | AES-256¹ | VPN → IPsec Tunnels → Phase 1 Proposal → Encryption | `set proposal aes256-sha256` | Network → IKE Crypto Profiles → Encryption | `set network ike crypto-profiles ike-crypto-profiles <perfil> encryption aes-256-cbc` |
+| Hash | SHA-256 | (mesmo campo do proposal, combinado) | (mesmo campo) | Network → IKE Crypto Profiles → Authentication | `set network ike crypto-profiles ike-crypto-profiles <perfil> hash sha256` |
+| Grupo DH | Group 14 | VPN → IPsec Tunnels → Phase 1 Proposal → DH Group | `set dhgrp 14` | Network → IKE Crypto Profiles → DH Group | `set network ike crypto-profiles ike-crypto-profiles <perfil> dh-group group14` |
+| Lifetime | 28800s (8h) | VPN → IPsec Tunnels → Phase 1 Proposal → Key Lifetime | `set keylife 28800` | Network → IKE Crypto Profiles → Key Lifetime | `set network ike crypto-profiles ike-crypto-profiles <perfil> lifetime hours 8` |
+
+¹ No laboratório, o firmware do Fortigate (build LENC/exportação restrita) só
+aceita propostas `des-*` — foi usado `des-sha256` como exemplo funcional. Ver
+nota em [`scripts-exemplo/README.md`](scripts-exemplo/README.md).
+
+### 7.2 Phase 2 (IPSec)
+
+| Parâmetro | Valor | Fortigate — GUI | Fortigate — CLI/Script | Palo Alto — GUI | Palo Alto — CLI/Script |
+|---|---|---|---|---|---|
+| Protocolo | ESP | (implícito no IPsec Tunnel) | (implícito) | Network → IPSec Crypto Profiles → ESP | `set network ike crypto-profiles ipsec-crypto-profiles <perfil> esp encryption aes-256-cbc` |
+| Criptografia | AES-256¹ | VPN → IPsec Tunnels → Phase 2 Selectors → Encryption | `set proposal aes256-sha256` | Network → IPSec Crypto Profiles → ESP → Encryption | `set network ike crypto-profiles ipsec-crypto-profiles <perfil> esp encryption aes-256-cbc` |
+| Hash (autenticação) | SHA-256 | (mesmo campo do proposal) | (mesmo campo) | Network → IPSec Crypto Profiles → ESP → Authentication | `set network ike crypto-profiles ipsec-crypto-profiles <perfil> esp authentication sha256` |
+| PFS | Group 14 | VPN → IPsec Tunnels → Phase 2 Selectors → Enable PFS / DH Group | `set pfs enable` + `set dhgrp 14` | Network → IPSec Crypto Profiles → DH Group | `set network ike crypto-profiles ipsec-crypto-profiles <perfil> dh-group group14` |
+| Lifetime | 3600s (1h) | VPN → IPsec Tunnels → Phase 2 Selectors → Auto-negotiate → Key Lifetime | `set keylifeseconds 3600` | Network → IPSec Crypto Profiles → Lifetime | `set network ike crypto-profiles ipsec-crypto-profiles <perfil> lifetime hours 1` |
+| Redes de interesse | LAN local ↔ LAN remota | VPN → IPsec Tunnels → Phase 2 Selectors → Local/Remote Address | `set src-subnet <rede> ` + `set dst-subnet <rede>` | (definido via política de segurança + roteamento) | — |
+
+### 7.3 Demais itens (interface de túnel, rota, política)
+
+| Item | Fortigate — GUI | Fortigate — CLI/Script | Palo Alto — GUI | Palo Alto — CLI/Script |
+|---|---|---|---|---|
+| Interface de túnel | Network → Interfaces → (interface criada com o nome da Phase1) → IP/Netmask² | `config system interface` → `edit "<nome>"` → `set ip <ip> 255.255.255.255` → `set remote-ip <ip_remoto> 255.255.255.255` | Network → Interfaces → Tunnel → Add tunnel.X → IPv4 | `set network interface tunnel units tunnel.1 ip <ip>/30` |
+| Zona (Palo Alto) | — (não aplicável no Fortigate) | — | Network → Zones → Add | `set zone vpn network layer3 tunnel.1` |
+| Rota estática | Network → Static Routes → Create New | `config router static` → `edit 0` → `set dst <rede>` → `set device "<interface_tunel>"` | Network → Virtual Routers → Static Routes → Add | `set network virtual-router default routing-table ip static-route <nome> destination <rede> interface tunnel.1` |
+| Política de firewall/segurança | Policy & Objects → Firewall Policy → Create New | `config firewall policy` → `edit 0` → `set srcintf/dstintf/srcaddr/dstaddr/action` | Policies → Security → Add | `set rulebase security rules <nome> from <zona_origem> to <zona_destino> action allow` |
+| Commit | (implícito a cada alteração) | (implícito) | Commit (canto superior direito) | `commit` |
+
+² O Fortigate exige máscara `/32` na interface de túnel, com o IP da outra
+ponta em um campo `remote-ip` separado — diferente da notação `/30` usada como
+simplificação na seção 1. Detalhe descoberto durante a automação real no
+laboratório (ver `scripts-exemplo/exemplo_fortigate_vpn_ipsec.py`).

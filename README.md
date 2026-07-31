@@ -30,7 +30,8 @@ compartilhadas (ambiente virtual, dependências, tema do Streamlit) na raiz:
 │       ├── commits/                # Histórico de commits (capturas)
 │       └── desenvolvimento_claude_code/   # Sessão de codificação assistida
 ├── parte2-vpn-ipsec/
-│   └── plano_vpn_ipsec_fortigate_paloalto.md   # Documento da Parte 2
+│   ├── plano_vpn_ipsec_fortigate_paloalto.md   # Documento da Parte 2
+│   └── scripts-exemplo/            # Scripts de exemplo (opcional)
 ├── .streamlit/
 │   └── config.toml             # Tema visual do Streamlit
 ├── requirements.txt
@@ -233,9 +234,10 @@ poderia ser automatizada via API/script Python.
 | 5. Validação de Configuração e Alertas | Verificação de status do túnel (CLI/API) em cada fabricante e estratégia de alertas em caso de falha ou divergência |
 | 6. Resumo do fluxo completo | Diagrama do fluxo de ponta a ponta do script de automação |
 
-Itens opcionais do desafio (scripts/configs de exemplo para os dois fabricantes e um
-script de teste de conectividade pelo túnel) ainda não foram desenvolvidos — dependem
-de uma simulação em laboratório, combinada como próximo passo.
+Scripts de exemplo de automação para os dois fabricantes estão em
+[`parte2-vpn-ipsec/scripts-exemplo/`](parte2-vpn-ipsec/scripts-exemplo/): um script
+funcional testado contra um Fortigate real via REST API, e um script conceitual para
+o lado Palo Alto (ver o README da pasta para detalhes de cada um).
 
 ---
 
@@ -244,6 +246,5 @@ de uma simulação em laboratório, combinada como próximo passo.
 - **Parte 1** (automação do switch): frontend integrado ao backend e testado contra o
   switch físico (Catalyst 2960-X, `10.10.90.6`) — VLANs, hostname, salvamento em
   NVRAM, backup e validação funcionando de ponta a ponta.
-- **Parte 2** (planejamento de VPN IPSec): documento concluído (ver seção acima) —
-  scripts/configs de exemplo e teste de conectividade (itens opcionais) ainda
-  **pendentes**.
+- **Parte 2** (planejamento de VPN IPSec): documento concluído (ver seção acima),
+  incluindo scripts de exemplo de automação para os dois fabricantes.
