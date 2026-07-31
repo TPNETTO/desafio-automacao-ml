@@ -113,6 +113,22 @@ Exemplo do formulário rodando localmente (`http://localhost:8501`):
 
 ![Formulário do frontend Streamlit](evidencias/frontend/Formulario.png)
 
+### Evidências de execução contra o switch físico
+
+CLI do switch (`show vlan`, prompt mudando de `TPNETTO#` para `SWITCH_AUTOMATIZADO#`)
+lado a lado com o frontend, mostrando VLANs 10/20/50 e hostname aplicados:
+
+![CLI do switch e frontend - VLANs e hostname aplicados](evidencias/frontend/frontend_e_cli_vlans_hostname.png)
+
+Validação pós-configuração concluída com sucesso, com backup gerado e disponível
+para download:
+
+![CLI do switch e frontend - validação com sucesso](evidencias/frontend/frontend_e_cli_validacao_sucesso.png)
+
+Backup local gerado em `backend/backup/` (nome = hostname + data/hora):
+
+![Pasta local de backups](evidencias/switch_cli/backup_pasta_local.png)
+
 ## Notas de implementação
 
 - A automação usa [Netmiko](https://github.com/ktbyers/netmiko) (`device_type
