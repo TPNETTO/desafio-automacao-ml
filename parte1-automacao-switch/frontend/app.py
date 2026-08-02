@@ -169,9 +169,7 @@ def aplicar_configuracao_no_switch(host, usuario, senha, novo_hostname, vlans, a
         resultado["backup"] = backend_switch.fazer_backup(conexao)
         avisar_etapa(f"Backup gerado em '{resultado['backup']}'")
 
-        resultado["validacao"] = backend_switch.validar_configuracao(
-            conexao, novo_hostname, vlans_esperadas=vlans
-        )
+        resultado["validacao"] = backend_switch.validar_configuracao(conexao)
     finally:
         conexao.disconnect()
 
@@ -179,6 +177,7 @@ def aplicar_configuracao_no_switch(host, usuario, senha, novo_hostname, vlans, a
 
 
 if enviado:
+    novo_hostname = novo_hostname.strip()
     ids_vlans = [int(id_vlan_10), int(id_vlan_20), int(id_vlan_50)]
     if len(set(ids_vlans)) != len(ids_vlans):
         st.error("As três VLANs precisam ter IDs diferentes entre si.")

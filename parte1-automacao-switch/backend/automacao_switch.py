@@ -38,6 +38,8 @@ VLANS_PADRAO = {
     50: "VLAN_SEGURANCA",
 }
 
+HOSTNAME_PADRAO = "SWITCH_AUTOMATIZADO"
+
 
 def configurar_vlans(conexao, vlans=None):
     """Cria/configura VLANs no switch a partir de um dicionario {id_vlan: nome}.
@@ -64,7 +66,14 @@ def alterar_hostname(conexao, novo_hostname):
     transmissao SSH (prompt capturado incompleto, ou nao encontrado dentro do
     tempo esperado), atribui-se `base_prompt` diretamente: ja sabemos qual e o
     novo hostname, pois acabamos de configura-lo.
+
+    Remove espacos nas pontas antes de usar o valor: um espaco sobrando (ex.:
+    vindo de um campo de formulario) e ignorado pelo IOS ao processar o
+    comando `hostname`, mas se fosse mantido aqui o `base_prompt` local ficaria
+    com um espaco que nunca aparece no prompt real do switch, quebrando o
+    reconhecimento do prompt nos comandos seguintes.
     """
+    novo_hostname = novo_hostname.strip()
     resultado = conexao.send_config_set([f"hostname {novo_hostname}"])
     conexao.base_prompt = novo_hostname
     return resultado
@@ -123,12 +132,17 @@ def obter_hostname_real(conexao):
     return encontrado.group(1) if encontrado else None
 
 
-def validar_configuracao(conexao, hostname_esperado, vlans_esperadas=None):
-    """Rele a configuracao do switch e compara com o esperado (hostname + VLANs).
+def validar_configuracao(conexao, hostname_esperado=None, vlans_esperadas=None):
+    """Rele a configuracao do switch e compara com o padrao esperado (hostname + VLANs).
 
-    Retorna um dicionario {"ok": bool, "divergencias": list[str]} para o
-    frontend/script exibir um alerta claro em caso de qualquer divergencia.
+    Por padrao compara contra o padrao fixo do desafio (HOSTNAME_PADRAO e
+    VLANS_PADRAO), independente do que foi digitado no formulario para
+    aplicar a configuracao — assim um valor fora do padrao (ex.: hostname
+    com erro de digitacao, VLAN com ID ou nome diferente do solicitado) e
+    sinalizado como divergencia, mesmo que a aplicacao em si tenha sido
+    bem-sucedida.
     """
+    hostname_esperado = hostname_esperado or HOSTNAME_PADRAO
     vlans_esperadas = vlans_esperadas or VLANS_PADRAO
     divergencias = []
 
