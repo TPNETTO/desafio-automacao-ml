@@ -34,6 +34,42 @@ A rede de túnel `169.255.1.0/30` fornece apenas 2 endereços utilizáveis, um p
 extremidade — adequada para uma interface de túnel roteada (VTI/tunnel interface), em vez
 de VPN somente baseada em política.
 
+### Topologia aplicada no laboratório real (bônus)
+
+Os parâmetros acima (`203.0.113.10`/`198.51.100.20`) são o exemplo genérico
+pedido nesta seção — faixas reservadas para documentação (RFC 5737), não
+ligadas a nenhum ambiente específico. Como item bônus, esse plano foi também
+validado contra equipamento real — um Fortigate **físico** e um Palo Alto
+**PA-VM** — com o túnel efetivamente estabelecido. Estrutura e parâmetros
+reais aplicados:
+
+```
+  [Fortigate físico]                              [Palo Alto PA-VM]
+  wan1: 10.10.90.7/24  ----  rede local  ----  ethernet1/1: 10.10.1.202/24
+              |________ túnel IPSec 169.255.1.0/30 ________|
+```
+
+| Parâmetro | Fortigate (real) | Palo Alto (real) |
+|---|---|---|
+| IP WAN | `10.10.90.7/24`¹ | `10.10.1.202/24`¹ |
+| Rede local protegida | — (escopo simplificado: só validar o túnel, sem LAN atrás de nenhum firewall) | — |
+| Rede de túnel (ponto a ponto) | `169.255.1.1/32`² | `169.255.1.2/30` |
+| Propostas Phase 1/Phase 2 | IKEv2, `AES-256/SHA-256/DH14` — idênticas às recomendadas acima, sem nenhum ajuste | idem |
+
+¹ IPs de rede local do laboratório (não IPs públicos reais) — as duas pontas
+ficam em sub-redes diferentes, conectadas pelo roteamento já existente na
+rede física, no lugar da "Internet" do exemplo genérico.
+
+² O FortiGate exige a interface de túnel com máscara `/32` e o IP remoto em
+um campo `remote-ip` separado — diferença de sintaxe descoberta durante a
+automação real, sem impacto no resultado.
+
+**Resultado**: IKE SA e IPsec SA `established`/`active` nos dois lados,
+tráfego ESP real confirmado por ping através do túnel. Evidências completas,
+scripts de automação executados e o passo a passo dos ajustes necessários
+estão em [`lab-simulacao-vpn/`](lab-simulacao-vpn/) e
+[`lab-simulacao-vpn/STATUS_LAB_VPN.md`](lab-simulacao-vpn/STATUS_LAB_VPN.md).
+
 ### Propostas de Phase 1 (IKE) — devem ser idênticas nos dois lados
 
 | Parâmetro | Valor proposto |
