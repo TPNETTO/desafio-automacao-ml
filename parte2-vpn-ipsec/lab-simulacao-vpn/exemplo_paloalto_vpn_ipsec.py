@@ -2,29 +2,42 @@
 Exemplo de automacao (item OPCIONAL da Parte 2): configuracao de VPN IPSec no
 lado Palo Alto via PAN-OS XML API.
 
-STATUS: script EXECUTADO com sucesso neste laboratorio (EVE-NG, PAN-OS 11.2.5).
-Interfaces, zonas, Phase1, Phase2, interface de tunel e politica foram
-aplicados e commitados (commit job OK). O tunel nao sobe (SA down) por
-incompatibilidade real de algoritmos com o Fortigate disponivel neste lab
-(build LENC, so aceita DES; PAN-OS recusa DES simples) - ver STATUS_LAB_VPN.md
-para o diagnostico completo. A configuracao abaixo (AES-256/SHA-256/DH14) e a
-correta e recomendada pelo plano oficial (secao 1); nao foi alterada.
+STATUS: script EXECUTADO com sucesso contra um Palo Alto PA-VM (PAN-OS 11.2.5)
+comunicando com um FortiGate FISICO real. Interfaces, zonas, Phase1, Phase2,
+interface de tunel, rota e politica foram aplicados e commitados (commit job
+OK), e o tunel ficou operante (IKE SA + IPsec SA established, trafego real
+confirmado) - ver STATUS_LAB_VPN.md para o resultado completo, incluindo a
+tentativa anterior com um Fortigate virtual sem licenca (que nunca conseguia
+negociar por so aceitar propostas DES).
+
+NOTA sobre a rota estatica (passo 5 abaixo): o roteador virtual do PAN-OS
+(dataplane) usa uma tabela de rotas completamente separada da tabela de rotas
+da interface de management. Mesmo que a gerencia already alcance a rede do
+Fortigate, o dataplane precisa de uma rota propria - sem ela, o Palo Alto
+recebe os pacotes do Fortigate mas nao consegue responder (comportamento
+descoberto durante a automacao real, nao documentado no plano original).
+
+NOTA sobre os management profiles (passo 6): interfaces de dados do PAN-OS
+nao respondem a ping por padrao. Os profiles abaixo sao so para permitir
+diagnostico com ping durante os testes - nao sao necessarios para o tunel
+IPSec funcionar.
 """
 import os
 import urllib.parse
 import urllib.request
 import ssl
 
-PA_HOST = os.environ.get("PA_HOST", "10.10.1.78")
+PA_HOST = os.environ.get("PA_HOST", "10.10.1.201")
 PA_API_KEY = os.environ["PA_API_KEY"]  # gerado via keygen (usuario/senha) antes de rodar este script
 
 BASE_URL = f"https://{PA_HOST}/api/"
 
-# Parametros da VPN (topologia ponto a ponto simplificada deste lab, sem LAN
-# atras dos firewalls - ver topologia.png e STATUS_LAB_VPN.md)
+# Parametros da VPN (sem LAN atras dos firewalls - escopo simplificado para
+# validar o tunel; ver topologia.png e STATUS_LAB_VPN.md)
 WAN_INTERFACE = "ethernet1/1"
-WAN_LOCAL_IP = "10.0.0.2/30"
-REMOTE_GATEWAY = "10.0.0.1"  # WAN-VPN (port2) do Fortigate
+WAN_LOCAL_IP = "10.10.1.202/24"
+WAN_GATEWAY = "10.10.1.1"       # gateway da rede do WAN_INTERFACE (nao o peer da VPN)
+REMOTE_GATEWAY = "10.10.90.7"   # wan1 do Fortigate fisico
 TUNNEL_IP = "169.255.1.2/30"
 PSK = os.environ["PA_VPN_PSK"]
 
@@ -81,7 +94,28 @@ def aplicar_configuracao():
         f"<member>{WAN_INTERFACE}</member><member>tunnel.1</member>",
     )
 
-    # 5. IKE Crypto Profile (Phase 1) - AES-256/SHA-256/DH14, conforme o plano oficial
+    # 5. Rota estatica default no virtual router (dataplane) - ver nota no topo do arquivo
+    api_set(
+        "/config/devices/entry/network/virtual-router/entry[@name='default']/routing-table/ip/static-route/entry[@name='default']",
+        f"<destination>0.0.0.0/0</destination><interface>{WAN_INTERFACE}</interface>"
+        f"<nexthop><ip-address>{WAN_GATEWAY}</ip-address></nexthop>",
+    )
+
+    # 6. Management profile com ping (so para diagnostico - ver nota no topo do arquivo)
+    api_set(
+        "/config/devices/entry/network/profiles/interface-management-profile/entry[@name='allow-ping']",
+        "<ping>yes</ping>",
+    )
+    api_set(
+        f"/config/devices/entry/network/interface/ethernet/entry[@name='{WAN_INTERFACE}']/layer3",
+        "<interface-management-profile>allow-ping</interface-management-profile>",
+    )
+    api_set(
+        "/config/devices/entry/network/interface/tunnel/units/entry[@name='tunnel.1']",
+        "<interface-management-profile>allow-ping</interface-management-profile>",
+    )
+
+    # 7. IKE Crypto Profile (Phase 1) - AES-256/SHA-256/DH14, conforme o plano oficial
     api_set(
         "/config/devices/entry/network/ike/crypto-profiles/ike-crypto-profiles/entry[@name='IKE-ML']",
         "<hash><member>sha256</member></hash>"
@@ -90,7 +124,7 @@ def aplicar_configuracao():
         "<lifetime><hours>8</hours></lifetime>",
     )
 
-    # 6. IKE Gateway
+    # 8. IKE Gateway
     api_set(
         "/config/devices/entry/network/ike/gateway/entry[@name='IKE-GW-FGT']",
         f"<authentication><pre-shared-key><key>{PSK}</key></pre-shared-key></authentication>"
@@ -99,7 +133,7 @@ def aplicar_configuracao():
         f"<peer-address><ip>{REMOTE_GATEWAY}</ip></peer-address>",
     )
 
-    # 7. IPSec Crypto Profile (Phase 2)
+    # 9. IPSec Crypto Profile (Phase 2)
     api_set(
         "/config/devices/entry/network/ike/crypto-profiles/ipsec-crypto-profiles/entry[@name='IPSEC-ML']",
         "<esp><encryption><member>aes-256-cbc</member></encryption>"
@@ -108,7 +142,7 @@ def aplicar_configuracao():
         "<lifetime><hours>1</hours></lifetime>",
     )
 
-    # 8. IPSec Tunnel
+    # 10. IPSec Tunnel
     api_set(
         "/config/devices/entry/network/tunnel/ipsec/entry[@name='IPSEC-TUN-FGT']",
         "<tunnel-interface>tunnel.1</tunnel-interface>"
@@ -116,7 +150,7 @@ def aplicar_configuracao():
         "<ipsec-crypto-profile>IPSEC-ML</ipsec-crypto-profile></auto-key>",
     )
 
-    # 9. Politica de seguranca (sem LAN neste lab - so a interface de tunel)
+    # 11. Politica de seguranca (sem LAN neste lab - so a interface de tunel)
     api_set(
         f"{vsys_xpath}/rulebase/security/rules/entry[@name='ALLOW-VPN-LAB']",
         "<from><member>WAN</member><member>VPN</member></from><to><member>WAN</member><member>VPN</member></to>"
@@ -125,7 +159,7 @@ def aplicar_configuracao():
         "<action>allow</action>",
     )
 
-    # 10. Commit (etapa obrigatoria e explicita no PAN-OS)
+    # 12. Commit (etapa obrigatoria e explicita no PAN-OS)
     api_commit()
 
 

@@ -241,30 +241,38 @@ poderia ser automatizada via API/script Python.
 | 5. Validação de Configuração e Alertas | Verificação de status do túnel (CLI/API) em cada fabricante e estratégia de alertas em caso de falha ou divergência |
 | 6. Resumo do fluxo completo | Diagrama do fluxo de ponta a ponta do script de automação |
 
-### Laboratório de simulação (bônus) — EVE-NG, Fortigate + Palo Alto
+### Laboratório de simulação (bônus) — Fortigate físico + Palo Alto (PAN-OS 11.2.5)
 
-Além do documento (entregável obrigatório), foi montado um laboratório real
-(EVE-NG) para tentar validar o plano na prática — resultado em
+Além do documento (entregável obrigatório), o plano foi validado na prática
+contra hardware/software reais — resultado em
 [`parte2-vpn-ipsec/lab-simulacao-vpn/`](parte2-vpn-ipsec/lab-simulacao-vpn/):
 
+- **Fortigate**: FortiWiFi-60C físico (`FWF60C3G13003764`, FortiOS
+  v5.2.0), interface `wan1` — `10.10.90.7/24`
+- **Palo Alto**: PA-VM (PAN-OS 11.2.5), interface `ethernet1/1` —
+  `10.10.1.202/24`
+- **Túnel**: rede `169.255.1.0/30` — Fortigate `169.255.1.1/32` (com
+  `remote-ip 169.255.1.2`, notação que o FortiOS exige na interface de
+  túnel) e Palo Alto `tunnel.1` — `169.255.1.2/30`
+- **Phase 1/Phase 2**: IKEv2, `aes256-sha256`, DH group 14 (mesmos
+  parâmetros recomendados na seção 1 do documento) — aplicados via
+  automação real (SSH/Netmiko no Fortigate, API XML do PAN-OS no Palo
+  Alto), não configuração manual
 - `exemplo_paloalto_vpn_ipsec.py` e `exemplo_fortigate_vpn_ipsec.py` —
   scripts de automação **executados de verdade** contra os dois firewalls
-  (API XML do PAN-OS e SSH/CLI via Netmiko), aplicando interfaces, zonas,
-  Phase 1, Phase 2, interface de túnel e políticas de segurança
 - `teste_conectividade_vpn.py` — script de teste de conectividade (item
   opcional), consulta o status do túnel nos dois lados e só tenta ping se
   ambos reportarem SA up
-- `evidencias/` — 13 prints (Palo Alto + Fortigate) e diagrama da topologia
-  (link ponto a ponto `10.0.0.0/30`, túnel lógico `169.255.1.1`/`169.255.1.2`
-  conforme a rede `169.255.1.0/30` definida no plano)
+- `evidencias/` — prints de ambos os fabricantes com o túnel operante
 
-**Resultado**: os dois lados foram configurados com sucesso, mas o túnel não
-fica operante (SA down) por uma incompatibilidade real de algoritmos entre as
-imagens disponíveis — o Fortigate usado só aceita propostas DES (build com
-restrição de exportação) e o PAN-OS recusa DES simples. Não é um erro de
-configuração; é justamente o tipo de risco de compatibilidade multi-fabricante
-que a seção 4 do documento já antecipa. Diagnóstico completo, com citação
-direta dos logs de ambos os fabricantes, em
+**Resultado**: túnel **estabelecido com sucesso** — IKE SA e IPsec SA
+`established`/`active` nos dois lados, e tráfego ESP real confirmado com
+ping entre os IPs do túnel (`169.255.1.1` ↔ `169.255.1.2`, 0% de perda).
+A tentativa anterior (Fortigate virtual, licença de avaliação) ficava presa
+em propostas DES por restrição de licença — trocando para hardware físico,
+o mesmo plano documentado (AES-256/SHA-256/DH14) funcionou de ponta a ponta,
+confirmando que o bloqueio era da licença da VM, não do plano em si.
+Diagnóstico completo (incluindo o histórico da tentativa anterior) em
 [`parte2-vpn-ipsec/lab-simulacao-vpn/STATUS_LAB_VPN.md`](parte2-vpn-ipsec/lab-simulacao-vpn/STATUS_LAB_VPN.md).
 
 ---
@@ -275,6 +283,6 @@ direta dos logs de ambos os fabricantes, em
   switch físico (Catalyst 2960-X, `10.10.90.6`) — VLANs, hostname, salvamento em
   NVRAM, backup e validação funcionando de ponta a ponta.
 - **Parte 2** (planejamento de VPN IPSec): documento concluído (entregável obrigatório).
-  Bônus: laboratório real (EVE-NG) com scripts de automação executados nos dois
-  fabricantes; túnel não fica operante por incompatibilidade real de algoritmos
-  (DES × AES) entre as imagens disponíveis — ver seção acima.
+  Bônus: laboratório real com Fortigate físico + Palo Alto (PAN-OS 11.2.5), scripts de
+  automação executados nos dois fabricantes, túnel IPSec **estabelecido e validado**
+  (IKE SA + IPsec SA up, tráfego ESP confirmado) — ver seção acima.

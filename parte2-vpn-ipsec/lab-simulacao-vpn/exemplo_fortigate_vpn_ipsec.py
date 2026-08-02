@@ -2,17 +2,24 @@
 Exemplo de automacao (item OPCIONAL da Parte 2): configuracao de VPN IPSec no
 lado Fortigate.
 
-STATUS: script EXECUTADO com sucesso neste laboratorio (EVE-NG, FortiGate-VM64-
-KVM v7.6.5). Phase1, Phase2, interface de tunel e politicas de firewall foram
-aplicados e confirmados via CLI. O tunel nao sobe (SA down) por
-incompatibilidade real de algoritmos com o Palo Alto - ver STATUS_LAB_VPN.md.
+STATUS: script EXECUTADO com sucesso contra um FortiGate FISICO (FortiWiFi-60C,
+FortiOS v5.2.0). Phase1, Phase2, interface de tunel e politicas de firewall
+foram aplicados e o tunel ficou operante (IKE SA + IPsec SA established nos
+dois lados, trafego real confirmado) - ver STATUS_LAB_VPN.md para o resultado
+completo, incluindo a tentativa anterior com um Fortigate virtual sem licenca
+(que so aceitava propostas DES e nunca conseguia negociar com o Palo Alto).
 
-NOTA IMPORTANTE sobre o proposal: esta build de Fortigate e "LENC" (Limited
-Encryption, restricao de exportacao) - so aceita propostas DES em Phase1 e
-Phase2 (testado exaustivamente: 3des-sha256, 3des-md5, aes128-sha256,
-aes256-sha256 - todos rejeitados). O plano oficial (secao 1) recomenda
-AES-256/SHA-256; num Fortigate com firmware completo, troque PROPOSAL abaixo
-por "aes256-sha256" para bater com o documentado no plano.
+NOTAS sobre particularidades desta versao de firmware (FortiOS v5.2.0, de
+2014), descobertas durante a automacao real - nao sao erros do plano, sao
+diferencas de sintaxe entre versoes do FortiOS:
+- `set net-device disable` nao existe nesta versao (comando adicionado em
+  releases mais recentes do FortiOS) - omitido abaixo.
+- `set remote-ip` na interface de tunel so aceita o IP, sem mascara, nesta
+  versao (`set remote-ip 255.255.255.255` da erro de sintaxe).
+- `set name` no firewall policy nao existe nesta versao - as politicas ficam
+  sem nome de exibicao, mas funcionam normalmente.
+Numa versao mais recente do FortiOS, esses comandos podem ser incluidos
+normalmente.
 
 Usa Netmiko (SSH/CLI) em vez da REST API porque a API HTTPS deste FortiOS nao
 completou o handshake TLS pelo curl/schannel do Windows neste ambiente (SSH
@@ -23,19 +30,19 @@ import os
 
 from netmiko import ConnectHandler
 
-FGT_HOST = os.environ.get("FGT_HOST", "10.10.1.200")
+FGT_HOST = os.environ.get("FGT_HOST", "10.10.90.7")
 FGT_USER = os.environ.get("FGT_USER", "admin")
 FGT_PASSWORD = os.environ["FGT_PASSWORD"]
 PSK = os.environ["FGT_VPN_PSK"]  # pre-shared key da Phase 1 (mesma do lado Palo Alto)
 
-# Parametros da VPN (topologia ponto a ponto simplificada deste lab, sem LAN
-# atras dos firewalls - ver topologia.png e STATUS_LAB_VPN.md)
-WAN_INTERFACE = "port2"          # WAN-VPN, ligado direto ao ethernet1/1 do PA-VM
-REMOTE_GATEWAY = "10.0.0.2"      # ethernet1/1 do Palo Alto
+# Parametros da VPN (sem LAN atras dos firewalls - escopo simplificado para
+# validar o tunel; ver topologia.png e STATUS_LAB_VPN.md)
+WAN_INTERFACE = "wan1"           # WAN fisica do Fortigate
+REMOTE_GATEWAY = "10.10.1.202"   # ethernet1/1 do Palo Alto
 TUNNEL_LOCAL_IP = "169.255.1.1 255.255.255.255"
-TUNNEL_REMOTE_IP = "169.255.1.2 255.255.255.255"
+TUNNEL_REMOTE_IP = "169.255.1.2"  # sem mascara - ver nota sobre esta versao de firmware
 TUNNEL_NAME = "VPN-PaloAlto"
-PROPOSAL = "des-sha256"  # ver nota sobre build LENC no topo do arquivo
+PROPOSAL = "aes256-sha256"       # mesma proposta recomendada no plano oficial (secao 1)
 DHGRP = "14"
 
 
@@ -53,7 +60,6 @@ def aplicar_configuracao():
         f'set interface "{WAN_INTERFACE}"',
         "set ike-version 2",
         "set peertype any",
-        "set net-device disable",
         f"set proposal {PROPOSAL}",
         f"set dhgrp {DHGRP}",
         f"set remote-gw {REMOTE_GATEWAY}",
@@ -80,7 +86,6 @@ def aplicar_configuracao():
 
         "config firewall policy",
         "edit 0",
-        'set name "WAN-to-PaloAlto"',
         f'set srcintf "{WAN_INTERFACE}"',
         f'set dstintf "{TUNNEL_NAME}"',
         'set srcaddr "all"',
@@ -93,7 +98,6 @@ def aplicar_configuracao():
 
         "config firewall policy",
         "edit 0",
-        'set name "PaloAlto-to-WAN"',
         f'set srcintf "{TUNNEL_NAME}"',
         f'set dstintf "{WAN_INTERFACE}"',
         'set srcaddr "all"',

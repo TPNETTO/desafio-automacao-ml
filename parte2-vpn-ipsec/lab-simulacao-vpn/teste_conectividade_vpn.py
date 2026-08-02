@@ -6,14 +6,13 @@ Segue a "Estrategia de validacao proposta" descrita na secao 5 do plano
 (IKE/IPSec SA) em cada fabricante, e so tenta um ping pelo tunel se os dois
 lados reportarem SA estabelecida.
 
-STATUS: EXECUTADO contra o laboratorio real (EVE-NG). As duas checagens
-(Fortigate via SSH/CLI, Palo Alto via API XML) sao funcionais - nao
-conceituais. Neste laboratorio especifico o tunel nunca fica "up" (ver
-STATUS_LAB_VPN.md: incompatibilidade real de algoritmos DES x AES entre as
-imagens disponiveis), entao o script sempre reporta a divergencia
-corretamente (exit code 1) em vez de travar ou dar falso positivo - esse e o
-comportamento esperado e correto dado o estado real do ambiente, nao uma
-falha do script.
+STATUS: EXECUTADO com sucesso contra o laboratorio real - FortiGate fisico
+(FortiWiFi-60C) + Palo Alto PA-VM (PAN-OS 11.2.5). As duas checagens
+(Fortigate via SSH/CLI, Palo Alto via API XML) sao funcionais, e o tunel
+esta de fato up: o script reporta UP nos dois lados e confirma o ping pelo
+overlay do tunel (ver STATUS_LAB_VPN.md para o resultado completo e a
+tentativa anterior, com um FortiGate virtual sem licenca, onde o script
+reportava corretamente a divergencia).
 """
 import os
 import re
@@ -24,12 +23,12 @@ import urllib.request
 
 from netmiko import ConnectHandler
 
-FGT_HOST = os.environ.get("FGT_HOST", "10.10.1.200")
+FGT_HOST = os.environ.get("FGT_HOST", "10.10.90.7")
 FGT_USER = os.environ.get("FGT_USER", "admin")
 FGT_PASSWORD = os.environ["FGT_PASSWORD"]
 FGT_TUNNEL_NAME = "VPN-PaloAlto"
 
-PA_HOST = os.environ.get("PA_HOST", "10.10.1.78")
+PA_HOST = os.environ.get("PA_HOST", "10.10.1.201")
 PA_API_KEY = os.environ["PA_API_KEY"]  # gerado via keygen antes de rodar este script
 PA_TUNNEL_NAME = "IPSEC-TUN-FGT"
 
@@ -63,7 +62,14 @@ def checar_fortigate():
 
 
 def checar_palo_alto():
-    """Consulta o status do tunel no Palo Alto via API XML (show vpn ike-sa)."""
+    """Consulta o status do tunel no Palo Alto via API XML (show vpn ike-sa).
+
+    Uma IKE SA estabelecida aparece como <entry> com um <gwid> - tanto para
+    IKEv1 (que tambem expoe <state>Mature</state>/<state>I2</state>) quanto
+    para IKEv2 (que nao usa essa tag de state, so role/mode/algo). Checar a
+    presenca de <gwid> cobre os dois casos; sem SA, a API retorna <result/>
+    vazio.
+    """
     params = {
         "type": "op",
         "key": PA_API_KEY,
@@ -74,7 +80,7 @@ def checar_palo_alto():
     with urllib.request.urlopen(req, context=ctx, timeout=15) as resp:
         corpo = resp.read().decode()
 
-    up = "<state>Mature</state>" in corpo or "<state>I2</state>" in corpo
+    up = "<gwid>" in corpo
     return {"up": up, "detalhe": corpo[:400]}
 
 
