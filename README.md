@@ -31,7 +31,9 @@ compartilhadas (ambiente virtual, dependências, tema do Streamlit) na raiz:
 │       └── desenvolvimento_claude_code/   # Sessão de codificação assistida
 ├── parte2-vpn-ipsec/
 │   ├── plano_vpn_ipsec_fortigate_paloalto.md   # Documento da Parte 2
-│   └── scripts-exemplo/            # Scripts de exemplo (opcional)
+│   └── lab-simulacao-vpn/          # Scripts de exemplo + evidências do lab (opcional)
+│       ├── STATUS_LAB_VPN.md
+│       └── evidencias/
 ├── .streamlit/
 │   └── config.toml             # Tema visual do Streamlit
 ├── requirements.txt
@@ -239,13 +241,31 @@ poderia ser automatizada via API/script Python.
 | 5. Validação de Configuração e Alertas | Verificação de status do túnel (CLI/API) em cada fabricante e estratégia de alertas em caso de falha ou divergência |
 | 6. Resumo do fluxo completo | Diagrama do fluxo de ponta a ponta do script de automação |
 
-Scripts de exemplo de automação para os dois fabricantes, mais um script de
-teste de conectividade, estão em
-[`parte2-vpn-ipsec/scripts-exemplo/`](parte2-vpn-ipsec/scripts-exemplo/): um script
-de configuração funcional testado contra um Fortigate real via REST API, um
-script conceitual para o lado Palo Alto, e um script de teste de conectividade
-(checagem de status funcional no Fortigate, conceitual no Palo Alto) — ver o
-README da pasta para detalhes de cada um.
+### Laboratório de simulação (bônus) — EVE-NG, Fortigate + Palo Alto
+
+Além do documento (entregável obrigatório), foi montado um laboratório real
+(EVE-NG) para tentar validar o plano na prática — resultado em
+[`parte2-vpn-ipsec/lab-simulacao-vpn/`](parte2-vpn-ipsec/lab-simulacao-vpn/):
+
+- `exemplo_paloalto_vpn_ipsec.py` e `exemplo_fortigate_vpn_ipsec.py` —
+  scripts de automação **executados de verdade** contra os dois firewalls
+  (API XML do PAN-OS e SSH/CLI via Netmiko), aplicando interfaces, zonas,
+  Phase 1, Phase 2, interface de túnel e políticas de segurança
+- `teste_conectividade_vpn.py` — script de teste de conectividade (item
+  opcional), consulta o status do túnel nos dois lados e só tenta ping se
+  ambos reportarem SA up
+- `evidencias/` — 13 prints (Palo Alto + Fortigate) e diagrama da topologia
+  (link ponto a ponto `10.0.0.0/30`, túnel lógico `169.255.1.1`/`169.255.1.2`
+  conforme a rede `169.255.1.0/30` definida no plano)
+
+**Resultado**: os dois lados foram configurados com sucesso, mas o túnel não
+fica operante (SA down) por uma incompatibilidade real de algoritmos entre as
+imagens disponíveis — o Fortigate usado só aceita propostas DES (build com
+restrição de exportação) e o PAN-OS recusa DES simples. Não é um erro de
+configuração; é justamente o tipo de risco de compatibilidade multi-fabricante
+que a seção 4 do documento já antecipa. Diagnóstico completo, com citação
+direta dos logs de ambos os fabricantes, em
+[`parte2-vpn-ipsec/lab-simulacao-vpn/STATUS_LAB_VPN.md`](parte2-vpn-ipsec/lab-simulacao-vpn/STATUS_LAB_VPN.md).
 
 ---
 
@@ -254,5 +274,7 @@ README da pasta para detalhes de cada um.
 - **Parte 1** (automação do switch): frontend integrado ao backend e testado contra o
   switch físico (Catalyst 2960-X, `10.10.90.6`) — VLANs, hostname, salvamento em
   NVRAM, backup e validação funcionando de ponta a ponta.
-- **Parte 2** (planejamento de VPN IPSec): documento concluído (ver seção acima),
-  incluindo scripts de exemplo de automação para os dois fabricantes.
+- **Parte 2** (planejamento de VPN IPSec): documento concluído (entregável obrigatório).
+  Bônus: laboratório real (EVE-NG) com scripts de automação executados nos dois
+  fabricantes; túnel não fica operante por incompatibilidade real de algoritmos
+  (DES × AES) entre as imagens disponíveis — ver seção acima.

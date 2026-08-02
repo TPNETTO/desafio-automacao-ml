@@ -14,6 +14,17 @@ aplicados e commitados dos dois lados. **O túnel não sobe (SA down)** por uma
 **incompatibilidade real de algoritmos de criptografia** entre as duas imagens
 de software disponíveis neste laboratório — não por erro de configuração.
 
+## Arquivos desta pasta
+
+- `exemplo_paloalto_vpn_ipsec.py` — aplica a config do lado Palo Alto via API XML (executado)
+- `exemplo_fortigate_vpn_ipsec.py` — aplica a config do lado Fortigate via SSH/CLI (executado)
+- `teste_conectividade_vpn.py` — checa status do túnel nos dois lados e só tenta
+  ping se ambos reportarem SA up (estratégia de validação da seção 5 do plano
+  oficial). **Executado contra o lab real**: reporta corretamente `DOWN` nos
+  dois lados e sai com `exit code 1` — comportamento correto de alerta, dado
+  que o túnel não está operante (ver abaixo)
+- `evidencias/` — prints do PA-VM, do Fortigate e o diagrama de topologia
+
 ## Ambiente
 
 - **Plataforma**: EVE-NG (após descartar uma tentativa anterior em ESXi, ver
