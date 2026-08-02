@@ -107,6 +107,22 @@ def fazer_backup(conexao, pasta_backup=PASTA_BACKUP):
     return caminho_arquivo
 
 
+def obter_hostname_real(conexao):
+    """Le o hostname efetivamente configurado no switch, direto da running-config.
+
+    Nao usar `conexao.base_prompt` aqui: esse atributo e apenas o valor que o
+    Netmiko usa localmente para reconhecer o prompt, atribuido manualmente em
+    `alterar_hostname` logo apos enviar o comando — ele nunca e confirmado
+    contra o dispositivo. Usa-lo na validacao tornaria a checagem uma
+    comparacao da variavel com ela mesma, incapaz de detectar qualquer
+    divergencia real (por exemplo, o comando ser rejeitado ou truncado pelo
+    switch).
+    """
+    saida = conexao.send_command("show running-config | include ^hostname")
+    encontrado = re.search(r"^hostname\s+(\S+)", saida, re.MULTILINE)
+    return encontrado.group(1) if encontrado else None
+
+
 def validar_configuracao(conexao, hostname_esperado, vlans_esperadas=None):
     """Rele a configuracao do switch e compara com o esperado (hostname + VLANs).
 
@@ -116,7 +132,7 @@ def validar_configuracao(conexao, hostname_esperado, vlans_esperadas=None):
     vlans_esperadas = vlans_esperadas or VLANS_PADRAO
     divergencias = []
 
-    hostname_atual = conexao.base_prompt
+    hostname_atual = obter_hostname_real(conexao)
     if hostname_atual != hostname_esperado:
         divergencias.append(
             f"Hostname divergente: esperado '{hostname_esperado}', "
